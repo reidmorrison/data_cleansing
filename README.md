@@ -39,11 +39,11 @@ class User
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.to_s.strip!}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
 end
 
 # Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.to_s.strip!}
+DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
 
 u = User.new
 u.first_name = '    joe   '
@@ -68,14 +68,14 @@ class User < ActiveRecord::Base
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.to_s.strip!}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
 
   # Automatically cleanse data before validation
-  before_validation: :cleanse_attributes!
+  before_validation :cleanse_attributes!
 end
 
 # Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.to_s.strip!}
+DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
 
 # Create a User instance
 u = User.new(:first_name => '    joe   ', :last_name => "\n  black\n", :address1 => "2632 Brown St   \n")

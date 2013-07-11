@@ -7,9 +7,9 @@ require 'shoulda'
 require 'data_cleansing'
 
 # Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.to_s.strip!}
+DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
 
-class User
+class RubyUser
   include DataCleansing::Cleanse
 
   attr_accessor :first_name, :last_name, :address1, :address2
@@ -30,7 +30,7 @@ class RubyTest < Test::Unit::TestCase
 
     context "with ruby user" do
       setup do
-        @user = User.new
+        @user = RubyUser.new
         @user.first_name = '    joe   '
         @user.last_name = "\n  black\n"
         @user.address1 = "2632 Brown St   \n"
@@ -45,6 +45,12 @@ class RubyTest < Test::Unit::TestCase
       should 'cleanse_attributes! using attribute specific custom cleaner' do
         @user.cleanse_attributes!
         assert_equal '<< 2632 Brown St >>', @user.address1
+      end
+
+      should 'cleanse_attributes! not cleanse nil attributes' do
+        @user.first_name = nil
+        @user.cleanse_attributes!
+        assert_equal nil, @user.first_name
       end
     end
 

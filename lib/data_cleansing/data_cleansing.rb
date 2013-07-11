@@ -4,9 +4,9 @@ module DataCleansing
   @@global_cleaners = ThreadSafe::Hash.new
 
   # Register a new cleaner
+  # Replaces any existing cleaner with the same name
   def self.register_cleaner(cleaner, &block)
     if block
-      raise "Cleaner: #{cleaner.inspect} has already been registered. Call unregister_cleaner to remove it first" if @@global_cleaners[cleaner.to_sym]
       @@global_cleaners[cleaner.to_sym] = block
     else
       # TODO Expose class methods as cleaners
