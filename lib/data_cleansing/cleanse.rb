@@ -1,16 +1,17 @@
 module DataCleansing
   # Mix-in to add cleaner
   module Cleanse
-    CleanerStruct = Struct.new(:cleaner, :attributes, :params)
+    CleanerStruct = Struct.new(:cleaners, :attributes, :params)
 
     module ClassMethods
       # Define how to cleanse one or more attributes
       def cleanse(*args)
         last = args.last
         params = (last.is_a?(Hash) && last.instance_of?(Hash)) ? args.pop.dup : {}
-        cleaner = params.delete(:cleaner)
-        raise(ArgumentError, "Mandatory :cleaner parameter is missing: #{params.inspect}") unless cleaner
-        (@cleaners ||= ThreadSafe::Array.new) << CleanerStruct.new(cleaner, args, params)
+        cleaners = Array(params.delete(:cleaner))
+        raise(ArgumentError, "Mandatory :cleaner parameter is missing: #{params.inspect}") unless cleaners
+        (@cleaners ||= ThreadSafe::Array.new) << CleanerStruct.new(cleaners, args, params)
+        nil
       end
 
       def cleaners
@@ -23,7 +24,6 @@ module DataCleansing
       def cleanse_attributes!
         self.class.cleaners.each do |cleaner_struct|
           params  = cleaner_struct.params
-          cleaner = cleaner_struct.cleaner
           attrs = cleaner_struct.attributes
 
           # Special case to include :all fields
@@ -62,14 +62,16 @@ module DataCleansing
 
             # No need to clean if attribute is nil
             unless value.nil?
-              new_value = if cleaner.is_a?(Proc)
-                cleaner.call(value, params)
-              else
-                if c = DataCleansing.cleaner(cleaner.to_sym)
-                  c.call(value, params)
-                else
-                  raise "No cleaner defined for #{cleaner.to_sym.inspect}"
-                end
+              # Allow multiple cleaners to be defined and only set the new value
+              # once all cleaners have run
+              new_value = value
+              cleaner_struct.cleaners.each do |cleaner|
+                # Cleaner itself could be a custom Proc, otherwise do a global lookup for it
+                proc = cleaner.is_a?(Proc) ? cleaner : DataCleansing.cleaner(cleaner.to_sym)
+                raise "No cleaner defined for #{cleaner.inspect}" unless proc
+
+                # Call the cleaner proc within the scope (binding) of this object
+                new_value = instance_exec(new_value, params, &proc)
               end
               # Update value if it has changed
               send("#{attr.to_sym}=".to_sym, new_value) if new_value != value
@@ -77,6 +79,7 @@ module DataCleansing
 
           end
         end
+        nil
       end
     end
 

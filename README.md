@@ -1,9 +1,9 @@
 data_cleansing
 ==============
 
-Data Cleansing solution for Ruby with additional support for Rails and Mongoid
+Data Cleansing framework for Ruby with additional support for Rails and Mongoid
 
-* http://github.com/ClarityServices/data_cleansing
+* http://github.com/reidmorrison/data_cleansing
 
 ## Introduction
 
@@ -15,7 +15,7 @@ in a model and have the data cleansed transparently when required.
 DataCleansing is a framework that allows any data cleansing to be applied to
 specific attributes or fields. At this time it does not supply the cleaning
 solutions themselves since they are usually straight forward, or so complex
-that they don't tend to be too usefull to others. However, over time built-in
+that they don't tend to be too useful to others. However, over time built-in
 cleansing solutions may be added. Feel free to submit any suggestions via a ticket
 or pull request.
 
@@ -27,39 +27,91 @@ or pull request.
 
 ## Examples
 
-### Ruby Example
-
+### Simple Example
 ```ruby
+require 'data_cleansing'
+
+# Define a global cleaner
+DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+
 class User
   include DataCleansing::Cleanse
 
-  attr_accessor :first_name, :last_name, :address1, :address2
+  attr_accessor :first_name, :last_name
+
+  # Strip leading and trialing whitespace from first_name and last_name
+  cleanse :first_name, :last_name, :cleaner => :strip
+end
+
+u = User.new
+u.first_name = '    joe   '
+u.last_name = "\n  black\n"
+puts "Before data cleansing #{u.inspect}"
+# Before data cleansing Before data cleansing #<User:0x007fc9f1081980 @first_name="    joe   ", @last_name="\n  black\n">
+
+u.cleanse_attributes!
+puts "After data cleansing #{u.inspect}"
+# After data cleansing After data cleansing #<User:0x007fc9f1081980 @first_name="joe", @last_name="black">
+```
+
+### Ruby Example
+
+```ruby
+require 'data_cleansing'
+
+# Define a global cleaners
+DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+DataCleansing.register_cleaner(:upcase) {|string| string.upcase!}
+
+class User
+  include DataCleansing::Cleanse
+
+  attr_accessor :first_name, :last_name, :title, :address1, :address2, :gender
 
   # Use a global cleaner
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
   cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
-end
 
-# Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
+  # Use multiple cleaners, and a custom block
+  cleanse :title, :cleaner => [:strip, :upcase, Proc.new {|string| "#{string}." unless string.end_with?('.')}]
+
+  # Change the cleansing rule based on the value of other attributes in that instance of user
+  # The 'title' is retrieved from the current instance of the user
+  cleanse :gender, :cleaner => [
+    :strip,
+    :upcase,
+    Proc.new do |gender|
+      if (gender == "UNKNOWN") && (title == "MR.")
+        "Male"
+      else
+        "Female"
+      end
+    end
+  ]
+end
 
 u = User.new
 u.first_name = '    joe   '
 u.last_name = "\n  black\n"
 u.address1 = "2632 Brown St   \n"
+u.title = "   \nmr   \n"
+u.gender = " Unknown  "
 puts "Before data cleansing #{u.inspect}"
+# Before data cleansing #<User:0x007fdd5a83a8f8 @first_name="    joe   ", @last_name="\n  black\n", @address1="2632 Brown St   \n", @title="   \nmr   \n", @gender=" Unknown  ">
+
 u.cleanse_attributes!
 puts "After data cleansing #{u.inspect}"
+# After data cleansing #<User:0x007fdd5a83a8f8 @first_name="joe", @last_name="black", @address1="2632 Brown St", @title="MR.", @gender="Male">
 ```
 
 ### Rails Example
 
-To encrypt a field in a Mongoid document, just add ":encrypted => true" at the end
-of the field specifier. The field name must currently begin with "encrypted_"
-
 ```ruby
+# Define a global cleanser
+DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+
 # 'users' table has the following columns :first_name, :last_name, :address1, :address2
 class User < ActiveRecord::Base
   include DataCleansing::Cleanse
@@ -74,9 +126,6 @@ class User < ActiveRecord::Base
   before_validation :cleanse_attributes!
 end
 
-# Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
-
 # Create a User instance
 u = User.new(:first_name => '    joe   ', :last_name => "\n  black\n", :address1 => "2632 Brown St   \n")
 puts "Before data cleansing #{u.attributes.inspect}"
@@ -84,6 +133,12 @@ u.validate
 puts "After data cleansing #{u.attributes.inspect}"
 u.save!
 ```
+
+## Notes
+
+Cleaners are called in the order in which they are defined, so subsequent cleaners
+can assume that the previous cleaners have run and can therefore access or even
+modify previously cleaned attributes
 
 ## Installation
 
@@ -120,9 +175,9 @@ tries to convert it to an integer or float.
 Meta
 ----
 
-* Code: `git clone git://github.com/ClarityServices/data_cleansing.git`
-* Home: <https://github.com/ClarityServices/data_cleansing>
-* Issues: <http://github.com/ClarityServices/data_cleansing/issues>
+* Code: `git clone git://github.com/reidmorrison/data_cleansing.git`
+* Home: <https://github.com/reidmorrison/data_cleansing>
+* Issues: <http://github.com/reidmorrison/data_cleansing/issues>
 * Gems: <http://rubygems.org/gems/data_cleansing>
 
 This project uses [Semantic Versioning](http://semver.org/).
@@ -135,7 +190,7 @@ Reid Morrison :: reidmo@gmail.com :: @reidmorrison
 License
 -------
 
-Copyright 2013 Clarity Services, Inc.
+Copyright 2013 Reid Morrison
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
