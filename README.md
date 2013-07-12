@@ -27,7 +27,7 @@ or pull request.
 
 ## Examples
 
-### Simple Example
+### Ruby Example
 ```ruby
 require 'data_cleansing'
 
@@ -54,7 +54,35 @@ puts "After data cleansing #{u.inspect}"
 # After data cleansing After data cleansing #<User:0x007fc9f1081980 @first_name="joe", @last_name="black">
 ```
 
-### Ruby Example
+### Rails Example
+
+```ruby
+# Define a global cleanser
+DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+
+# 'users' table has the following columns :first_name, :last_name, :address1, :address2
+class User < ActiveRecord::Base
+  include DataCleansing::Cleanse
+
+  # Use a global cleaner
+  cleanse :first_name, :last_name, :cleaner => :strip
+
+  # Define a once off cleaner
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
+
+  # Automatically cleanse data before validation
+  before_validation :cleanse_attributes!
+end
+
+# Create a User instance
+u = User.new(:first_name => '    joe   ', :last_name => "\n  black\n", :address1 => "2632 Brown St   \n")
+puts "Before data cleansing #{u.attributes.inspect}"
+u.validate
+puts "After data cleansing #{u.attributes.inspect}"
+u.save!
+```
+
+### Advanced Ruby Example
 
 ```ruby
 require 'data_cleansing'
@@ -106,34 +134,6 @@ puts "After data cleansing #{u.inspect}"
 # After data cleansing #<User:0x007fdd5a83a8f8 @first_name="joe", @last_name="black", @address1="2632 Brown St", @title="MR.", @gender="Male">
 ```
 
-### Rails Example
-
-```ruby
-# Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string| string.strip!}
-
-# 'users' table has the following columns :first_name, :last_name, :address1, :address2
-class User < ActiveRecord::Base
-  include DataCleansing::Cleanse
-
-  # Use a global cleaner
-  cleanse :first_name, :last_name, :cleaner => :strip
-
-  # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
-
-  # Automatically cleanse data before validation
-  before_validation :cleanse_attributes!
-end
-
-# Create a User instance
-u = User.new(:first_name => '    joe   ', :last_name => "\n  black\n", :address1 => "2632 Brown St   \n")
-puts "Before data cleansing #{u.attributes.inspect}"
-u.validate
-puts "After data cleansing #{u.attributes.inspect}"
-u.save!
-```
-
 ## Notes
 
 Cleaners are called in the order in which they are defined, so subsequent cleaners
@@ -172,8 +172,15 @@ For example, in Rails it obtains the raw data value before Rails has converted i
 Which is useful for cleansing integer or float fields as raw strings before Rails
 tries to convert it to an integer or float.
 
-Meta
-----
+## Dependencies
+
+DataCleansing requires the following dependencies
+
+* Ruby V1.8.7, V1.9.3 or V2 and greater
+* Rails V2 or greater for Rails integration ( Only if Rails is being used )
+* Mongoid V2 or greater for Rails integration ( Only if Mongoid is being used )
+
+## Meta
 
 * Code: `git clone git://github.com/reidmorrison/data_cleansing.git`
 * Home: <https://github.com/reidmorrison/data_cleansing>
@@ -182,13 +189,11 @@ Meta
 
 This project uses [Semantic Versioning](http://semver.org/).
 
-Authors
--------
+## Authors
 
 Reid Morrison :: reidmo@gmail.com :: @reidmorrison
 
-License
--------
+## License
 
 Copyright 2013 Reid Morrison
 
