@@ -23,16 +23,14 @@ module DataCleansing
       # Cleanse the attributes using specified cleaners
       def cleanse_attributes!
         self.class.cleaners.each do |cleaner_struct|
-          params  = cleaner_struct.params
-          attrs = cleaner_struct.attributes
+          params = cleaner_struct.params
+          attrs  = cleaner_struct.attributes
 
           # Special case to include :all fields
           # Only works with ActiveRecord based models, not supported with regular Ruby models
           if attrs.include?(:all) && defined?(ActiveRecord) && respond_to?(:attributes)
             attrs = attributes.keys.collect{|i| i.to_sym}
-            if except = params.delete(:except)
-              attrs -= except
-            end
+            attrs.delete(:id)
 
             # Remove serialized_attributes if any, from the :all condition
             if self.class.respond_to?(:serialized_attributes)
@@ -49,12 +47,18 @@ module DataCleansing
                 end
               end
             end
+
+            # Explicitly remove specified attributes from cleansing
+            if except = params[:except]
+              attrs -= except
+            end
+
           end
 
           attrs.each do |attr|
             # Under ActiveModel for Rails and Mongoid need to retrieve raw value
             # before data type conversion
-            value = if respond_to?(:read_attribute_before_type_cast)
+            value = if respond_to?(:read_attribute_before_type_cast) && has_attribute?(attr.to_s)
               read_attribute_before_type_cast(attr.to_s)
             else
               send(attr.to_sym)

@@ -50,11 +50,14 @@ end
 class User < ActiveRecord::Base
   include DataCleansing::Cleanse
 
+  # Also cleanse non-database backed fields
+  attr_accessor :instance_var
+
   # Use a global cleaner
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| "<< #{string.strip!} >>"}
+  cleanse :address1, :address2, :instance_var, :cleaner => Proc.new {|string| "<< #{string.strip!} >>"}
 
   # Custom Zip Code cleaner
   cleanse :zip_code, :cleaner => :digits_to_integer
@@ -69,7 +72,7 @@ class User2 < ActiveRecord::Base
   self.table_name = 'users'
 
   # Test :all cleaner. Only works with ActiveRecord Models
-  cleanse :all, :cleaner => :strip
+  cleanse :all, :cleaner => [:strip, Proc.new{|s| "@#{s}@"}], :except => [:address1, :zip_code]
 
   # Automatically cleanse data before validation
   before_validation :cleanse_attributes!
@@ -88,8 +91,13 @@ class ActiveRecordTest < Test::Unit::TestCase
           :first_name => '    joe   ',
           :last_name  => "\n  black\n",
           :address1   => "2632 Brown St   \n",
-          :zip_code   => "\n\tblah 12345badtext\n"
+          :zip_code   => "\n\tblah 12345badtext\n",
+          :instance_var => "\n    instance\n\t      "
         )
+      end
+
+      should 'only have 3 cleaners' do
+        assert_equal 3, User.cleaners.size, User.cleaners
       end
 
       should 'cleanse_attributes! using global cleaner' do
@@ -101,6 +109,7 @@ class ActiveRecordTest < Test::Unit::TestCase
       should 'cleanse_attributes! using attribute specific custom cleaner' do
         assert_equal true, @user.valid?
         assert_equal '<< 2632 Brown St >>', @user.address1
+        assert_equal '<< instance >>', @user.instance_var
       end
 
       should 'cleanse_attributes! using global cleaner using rails extensions' do
@@ -119,12 +128,16 @@ class ActiveRecordTest < Test::Unit::TestCase
         )
       end
 
+      should 'only have 1 cleaner' do
+        assert_equal 1, User2.cleaners.size, User2.cleaners
+      end
+
       should 'cleanse_attributes! clean all attributes' do
         assert_equal true, @user.valid?
-        assert_equal 'joe', @user.first_name, User2.cleaners
-        assert_equal 'black', @user.last_name
-        assert_equal '2632 Brown St', @user.address1
-        assert_equal 12345, @user.zip_code
+        assert_equal '@joe@', @user.first_name, User2.cleaners
+        assert_equal '@black@', @user.last_name
+        assert_equal "2632 Brown St   \n", @user.address1
+        assert_equal 12345, @user.zip_code, User2.cleaners
       end
 
     end
