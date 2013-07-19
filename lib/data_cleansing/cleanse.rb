@@ -37,6 +37,7 @@ module DataCleansing
 
       # Run each of the cleaners in the order they are listed in the array
       def execute_cleaners(cleaners)
+        return false if cleaners.nil?
         cleaners.each do |cleaner_struct|
           params = cleaner_struct.params
           attrs  = cleaner_struct.attributes
