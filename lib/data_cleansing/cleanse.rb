@@ -22,7 +22,22 @@ module DataCleansing
     module InstanceMethods
       # Cleanse the attributes using specified cleaners
       def cleanse_attributes!
-        self.class.cleaners.each do |cleaner_struct|
+        # Execute parent cleansers first, starting with the top parent
+        klasses = [self.class]
+        klass = self.class.superclass
+        while klass != Object
+          klasses << klass if klass.respond_to?(:cleaners)
+          klass = klass.superclass
+        end
+        klasses.reverse_each {|klass| execute_cleaners(klass.cleaners)}
+        true
+      end
+
+      private
+
+      # Run each of the cleaners in the order they are listed in the array
+      def execute_cleaners(cleaners)
+        cleaners.each do |cleaner_struct|
           params = cleaner_struct.params
           attrs  = cleaner_struct.attributes
 

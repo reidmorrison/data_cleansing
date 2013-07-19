@@ -9,7 +9,12 @@ require 'data_cleansing'
 # Define a global cleanser
 DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
 
-class RubyUser
+# Non Cleansing base class
+class RubyUserBase
+  attr_accessor :version
+end
+
+class RubyUser < RubyUserBase
   include DataCleansing::Cleanse
 
   attr_accessor :first_name, :last_name, :address1, :address2
@@ -19,6 +24,11 @@ class RubyUser
 
   # Define a once off cleaner
   cleanse :address1, :address2, :cleaner => Proc.new {|string| "<< #{string.strip!} >>"}
+end
+
+class RubyUserChild < RubyUser
+  attr_accessor :gender
+  cleanse :gender, :cleaner => Proc.new {|gender| gender.to_s.strip.downcase}
 end
 
 # Another global cleaner, used by RubyUser2
@@ -84,6 +94,39 @@ class RubyTest < Test::Unit::TestCase
         @user.cleanse_attributes!
         assert_equal nil, @user.first_name
       end
+    end
+
+    context "with ruby user child" do
+      setup do
+        @user = RubyUserChild.new
+        @user.first_name = '    joe   '
+        @user.last_name  = "\n  black\n"
+        @user.address1   = "2632 Brown St   \n"
+        @user.gender     = "\n   Male   \n"
+      end
+
+      should 'cleanse_attributes! using global cleaner' do
+        @user.cleanse_attributes!
+        assert_equal 'joe', @user.first_name
+        assert_equal 'black', @user.last_name
+      end
+
+      should 'cleanse_attributes! using attribute specific custom cleaner' do
+        @user.cleanse_attributes!
+        assert_equal '<< 2632 Brown St >>', @user.address1
+      end
+
+      should 'cleanse_attributes! not cleanse nil attributes' do
+        @user.first_name = nil
+        @user.cleanse_attributes!
+        assert_equal nil, @user.first_name
+      end
+
+      should 'cleanse_attributes! clean child attributes' do
+        @user.cleanse_attributes!
+        assert_equal 'male', @user.gender
+      end
+
     end
 
     context "with ruby user2" do
