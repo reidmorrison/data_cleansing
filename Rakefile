@@ -24,6 +24,7 @@ task :gem  do |t|
     s.license     = "Apache License V2.0"
     s.has_rdoc    = true
     s.add_dependency 'thread_safe'
+    s.add_dependency 'semantic_logger'
   end
   Gem::Package.build gemspec
 end

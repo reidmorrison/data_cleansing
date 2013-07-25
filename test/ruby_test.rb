@@ -70,6 +70,13 @@ class RubyTest < Test::Unit::TestCase
       assert DataCleansing.cleaner(:strip)
     end
 
+    should 'Model.cleanse_attribute' do
+      assert_equal 'male',                RubyUserChild.cleanse_attribute(:gender,     "\n   Male   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal 'joe',                 RubyUserChild.cleanse_attribute(:first_name, '    joe   '), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal 'black',               RubyUserChild.cleanse_attribute(:last_name,  "\n  black\n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal '<< 2632 Brown St >>', RubyUserChild.cleanse_attribute(:address1,   "2632 Brown St   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+    end
+
     context "with ruby user" do
       setup do
         @user = RubyUser.new

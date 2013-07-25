@@ -1,4 +1,5 @@
 require 'thread_safe'
+require 'semantic_logger'
 require 'data_cleansing/version'
 require 'data_cleansing/data_cleansing'
 
@@ -7,11 +8,6 @@ module DataCleansing
 end
 
 # Rails Extensions
-#if defined?(Rails)
-#  require 'data_cleansing/railtie'
-#end
-
-# Mongoid Extensions
-#if defined?(Mongoid)
-#  require 'data_cleansing/extensions/mongoid/fields'
-#end
+if defined?(Rails)
+  require 'data_cleansing/railtie'
+end

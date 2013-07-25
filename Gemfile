@@ -1,4 +1,6 @@
 source 'https://rubygems.org'
+gem 'thread_safe'
+gem 'semantic_logger'
 
 group :test do
   gem "shoulda"
