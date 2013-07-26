@@ -39,9 +39,9 @@ end
 # Define a global cleaner
 DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
 
-# Log data cleansing result at :info level
-# Set to a level below the current log level to disable
-DataCleansing.cleansing_log_level = :info
+# Log data cleansing result
+# Set to :warn or higher to disable
+DataCleansing.logger.level = :debug
 
 # Set the Global list of fields to be masked
 DataCleansing.register_masked_attributes :ssn, :bank_account_number

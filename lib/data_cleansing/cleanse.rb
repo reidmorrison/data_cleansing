@@ -114,11 +114,12 @@ module DataCleansing
       def data_cleansing_execute_cleaners(cleaners)
         return false if cleaners.nil?
 
-        # Capture all changes to attributes if the log level is high enough
-        changes = {} if DataCleansing.logger.send("#{DataCleansing.cleansing_log_level}?")
+        # Capture all changes to attributes if the log level is :info or greater
+        changes = {} if DataCleansing.logger.info?
+        # Capture all modified fields if log_level is :debug or :trace
+        verbose = DataCleansing.logger.debug?
 
-        #logger.send(self.class.data_cleansing_log_level, "Cleansed Attributes", changes) if changes
-        DataCleansing.logger.send("benchmark_#{DataCleansing.cleansing_log_level}","Cleansed Attributes", :payload => changes) do
+        DataCleansing.logger.benchmark_info("cleanse_attributes!", :payload => changes) do
           cleaners.each do |cleaner_struct|
             params = cleaner_struct.params
             attrs  = cleaner_struct.attributes
@@ -177,10 +178,12 @@ module DataCleansing
                     if previous = changes[attr.to_sym]
                       previous[:after] = new_value
                     else
-                      changes[attr.to_sym] = {
-                        :before => masked ? :masked : value,
-                        :after  => new_value
-                      }
+                      if new_value.nil? || verbose
+                        changes[attr.to_sym] = {
+                          :before => masked ? :masked : value,
+                          :after  => new_value
+                        }
+                      end
                     end
                   end
                 end

@@ -23,7 +23,27 @@ or pull request.
 
 * Supports global cleansing definitions that can be associated with any Ruby,
   Rails, Mongoid, or other model.
-* Supports custom cleansing definitions for a single attribute
+* Supports custom cleansing definitions that can be defined in-line using block.
+* A cleansing block can access the other attributes in the model in determining
+  how to cleanse the current attribute
+* In a cleansing block other can also be modified if necessary
+* Cleansers are executed in the order they are defined. As a result multiple
+  cleansers can be run against the same field and the order is preserved
+* Multiple cleansers can be specified for a list of attributes at the same time
+* Inheritance is supported. The cleansers for parent classes are run before
+  the child's cleansers
+* Cleansers can be called outside of a model instance for cases where fields
+  need to be cleansed before the model is created, or needs to be found
+* Logging of data cleansing with the before and after values for troubleshooting.
+  Depending on the log level all modified fields are logged, or just the ones
+  completely wiped out to nil
+
+## ActiveRecord (ActiveModel) Features
+
+* Passes the value of the attribute before the Rails type cast so that the
+  original text can be cleansed before passing back to rails for type conversion.
+  This is important for numeric and date fields where spaces and control characters
+  can have undesired effects
 
 ## Examples
 
@@ -134,6 +154,62 @@ puts "After data cleansing #{u.inspect}"
 # After data cleansing #<User:0x007fdd5a83a8f8 @first_name="joe", @last_name="black", @address1="2632 Brown St", @title="MR.", @gender="Male">
 ```
 
+## Rails configuration
+
+When DataCleansing is used in a Rails environment it can be configured using the
+regular Rails configuration mechanisms. For example:
+
+```ruby
+module MyApplication
+  class Application < Rails::Application
+
+   # Data Cleansing Configuration
+
+   # Attributes who's values are to be masked out during logging
+   config.data_cleansing.register_masked_attributes :bank_account_number, :social_security_number
+
+   # Optionally override the default log level
+   #   Set to :trace or :debug to log all fields modified
+   #   Set to :info to log only those fields which were nilled out
+   #   Set to :warn or higher to disable logging of cleansing actions
+   config.data_cleansing.logger.level = :info
+
+   # Register any global cleaners
+   config.data_cleansing.register_cleaner(:strip) {|string| string.strip!}
+
+  end
+end
+```
+
+## Logging
+
+DataCleansing uses SemanticLogger for logging due to it's excellent integration
+with Rails and its ability to log data in it's raw form to Mongo and to files.
+
+If running a Rails application it is recommended to install the gem
+rails_semantic_logger which replaces the default Rails logger. It is however
+possible to configure the semantic_logger gem to use the existing Rails logger
+in a Rails initializer as follows:
+
+```ruby
+SemanticLogger.default_level = Rails.logger.level
+SemanticLogger.add_appender(Rails.logger)
+```
+
+By changing the log level for DataCleansing the type of output for data
+cleansing can be controlled:
+
+* :trace or :debug to log all fields modified
+* :info to log only those fields which were nilled out
+* :warn or higher to disable logging of cleansing actions
+
+To change the log level, either use the Rails configuration approach, or set it
+directly:
+
+```ruby
+DataCleansing.logger.level = :info
+```
+
 ## Notes
 
 Cleaners are called in the order in which they are defined, so subsequent cleaners
@@ -178,7 +254,7 @@ DataCleansing requires the following dependencies
 
 * Ruby V1.8.7, V1.9.3 or V2 and greater
 * Rails V2 or greater for Rails integration ( Only if Rails is being used )
-* Mongoid V2 or greater for Rails integration ( Only if Mongoid is being used )
+* Mongoid V2 or greater for Mongoid integration ( Only if Mongoid is being used )
 
 ## Meta
 

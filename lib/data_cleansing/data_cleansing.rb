@@ -4,7 +4,6 @@ module DataCleansing
   # Global Data Cleansers
   @@global_cleaners     = ThreadSafe::Hash.new
   @@masked_attributes   = ThreadSafe::Array.new
-  @@cleansing_log_level = :info
 
   # Register a new cleaner
   # Replaces any existing cleaner with the same name
@@ -26,16 +25,6 @@ module DataCleansing
   # Returns the Global list of attributes to mask in any log output
   def self.masked_attributes
     @@masked_attributes.freeze
-  end
-
-  # Set the log_level at which to log cleansing activities at
-  def self.cleansing_log_level
-    @@cleansing_log_level
-  end
-
-  # Set the log_level at which to log cleansing activities at
-  def self.cleansing_log_level=(log_level)
-    @@cleansing_log_level = log_level
   end
 
 end
