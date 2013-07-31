@@ -11,12 +11,30 @@ module DataCleansing
         params = (last.is_a?(Hash) && last.instance_of?(Hash)) ? attributes.pop.dup : {}
         cleaners = Array(params.delete(:cleaner))
         raise(ArgumentError, "Mandatory :cleaner parameter is missing: #{params.inspect}") unless cleaners
+
         cleaner = DataCleansingCleaner.new(cleaners, attributes, params)
         data_cleansing_cleaners << cleaner
+
+        # Create shortcuts to cleaners for each attribute for use by .cleanse_attribute
         attributes.each do |attr|
           (data_cleansing_attribute_cleaners[attr] ||= ThreadSafe::Array.new) << cleaner
         end
         cleaner
+      end
+
+      # Add one or more methods on this object to be called after cleansing is complete
+      # on an object
+      # After cleansers are executed when #cleanse_attributes! is called, but after
+      # all other defined cleansers have been executed.
+      # They are _not_ called when .cleanse_attribute is called
+      #
+      # After cleaners should be used when based on the value of one attribute,
+      # one or more of the other attributes need to be modified
+      def after_cleanse(*methods)
+        methods.each do |m|
+          raise "Method #{m.inspect} must be a symbol" unless m.is_a?(Symbol)
+          data_cleansing_after_cleaners << m unless data_cleansing_after_cleaners.include?(m)
+        end
       end
 
       # Returns the value cleansed using the cleaners defined for that attribute
@@ -55,6 +73,11 @@ module DataCleansing
       # Array of cleaners to execute against this model and it's children
       def data_cleansing_cleaners
         @data_cleansing_cleaners ||= ThreadSafe::Array.new
+      end
+
+      # Array of cleaners to execute against this model and it's children
+      def data_cleansing_after_cleaners
+        @data_cleansing_after_cleaners ||= ThreadSafe::Array.new
       end
 
       # Hash of attributes to clean with their corresponding cleaner
@@ -96,15 +119,21 @@ module DataCleansing
 
     module InstanceMethods
       # Cleanse the attributes using specified cleaners
+      # and execute after cleaners once complete
       def cleanse_attributes!
         # Collect parent cleaners first, starting with the top parent
         cleaners = [self.class.send(:data_cleansing_cleaners)]
+        after_cleaners = [self.class.send(:data_cleansing_after_cleaners)]
         klass = self.class.superclass
         while klass != Object
           cleaners << klass.send(:data_cleansing_cleaners) if klass.respond_to?(:data_cleansing_cleaners)
+          after_cleaners << klass.send(:data_cleansing_after_cleaners) if klass.respond_to?(:data_cleansing_after_cleaners)
           klass = klass.superclass
         end
         cleaners.reverse_each {|cleaner| data_cleansing_execute_cleaners(cleaner)}
+
+        # Execute the after cleaners, starting with the parent after cleanse methods
+        after_cleaners.reverse_each {|a| a.each {|method| send(method)} }
         true
       end
 

@@ -37,7 +37,7 @@ ActiveRecord::Schema.define :version => 0 do
 end
 
 # Define a global cleaner
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
+DataCleansing.register_cleaner(:strip) {|string| string.strip}
 
 # Log data cleansing result
 # Set to :warn or higher to disable
@@ -70,7 +70,7 @@ class User < ActiveRecord::Base
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :instance_var, :cleaner => Proc.new {|string| "<< #{string.strip!} >>"}
+  cleanse :address1, :address2, :instance_var, :cleaner => Proc.new {|string| "<< #{string.strip} >>"}
 
   # Custom Zip Code cleaner
   cleanse :zip_code, :cleaner => :digits_to_integer

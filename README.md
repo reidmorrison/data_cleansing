@@ -52,7 +52,7 @@ or pull request.
 require 'data_cleansing'
 
 # Define a global cleaner
-DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+DataCleansing.register_cleaner(:strip) {|string| string.strip}
 
 class User
   include DataCleansing::Cleanse
@@ -78,7 +78,7 @@ puts "After data cleansing #{u.inspect}"
 
 ```ruby
 # Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string| string.strip!}
+DataCleansing.register_cleaner(:strip) {|string| string.strip}
 
 # 'users' table has the following columns :first_name, :last_name, :address1, :address2
 class User < ActiveRecord::Base
@@ -88,7 +88,7 @@ class User < ActiveRecord::Base
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip}
 
   # Automatically cleanse data before validation
   before_validation :cleanse_attributes!
@@ -108,8 +108,8 @@ u.save!
 require 'data_cleansing'
 
 # Define a global cleaners
-DataCleansing.register_cleaner(:strip) {|string| string.strip!}
-DataCleansing.register_cleaner(:upcase) {|string| string.upcase!}
+DataCleansing.register_cleaner(:strip) {|string| string.strip}
+DataCleansing.register_cleaner(:upcase) {|string| string.upcase}
 
 class User
   include DataCleansing::Cleanse
@@ -120,7 +120,7 @@ class User
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip}
 
   # Use multiple cleaners, and a custom block
   cleanse :title, :cleaner => [:strip, :upcase, Proc.new {|string| "#{string}." unless string.end_with?('.')}]
@@ -175,7 +175,7 @@ module MyApplication
    config.data_cleansing.logger.level = :info
 
    # Register any global cleaners
-   config.data_cleansing.register_cleaner(:strip) {|string| string.strip!}
+   config.data_cleansing.register_cleaner(:strip) {|string| string.strip}
 
   end
 end

@@ -7,7 +7,7 @@ require 'shoulda'
 require 'data_cleansing'
 
 # Define a global cleanser
-DataCleansing.register_cleaner(:strip) {|string, params, object| string.strip!}
+DataCleansing.register_cleaner(:strip) {|string| string.strip}
 
 # Non Cleansing base class
 class RubyUserBase
@@ -23,7 +23,19 @@ class RubyUser < RubyUserBase
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| "<< #{string.strip!} >>"}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| "<< #{string.strip} >>"}
+
+  # Execute after cleanser
+  after_cleanse :name_check
+
+  # Called once cleaning has been completed
+  def name_check
+    # If first_name has a value, but last_name does not
+    if last_name.nil? || (last_name.length == 0)
+      self.last_name = first_name
+      self.first_name = nil
+    end
+  end
 end
 
 class RubyUserChild < RubyUser
@@ -32,7 +44,7 @@ class RubyUserChild < RubyUser
 end
 
 # Another global cleaner, used by RubyUser2
-DataCleansing.register_cleaner(:upcase) {|string| string.upcase!}
+DataCleansing.register_cleaner(:upcase) {|string| string.upcase}
 
 class RubyUser2
   include DataCleansing::Cleanse
@@ -43,7 +55,7 @@ class RubyUser2
   cleanse :first_name, :last_name, :cleaner => :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip!}
+  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip}
 
   # Use multiple cleaners, and a custom block
   cleanse :title, :cleaner => [:strip, :upcase, Proc.new {|string| "#{string}." unless string.end_with?('.')}]
@@ -100,6 +112,14 @@ class RubyTest < Test::Unit::TestCase
         @user.first_name = nil
         @user.cleanse_attributes!
         assert_equal nil, @user.first_name
+      end
+
+      should 'cleanse_attributes! call after cleaner' do
+        @user.first_name = 'Jack'
+        @user.last_name = nil
+        @user.cleanse_attributes!
+        assert_equal nil, @user.first_name, @user.inspect
+        assert_equal 'Jack', @user.last_name, @user.inspect
       end
     end
 
