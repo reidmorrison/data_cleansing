@@ -120,109 +120,122 @@ module DataCleansing
     module InstanceMethods
       # Cleanse the attributes using specified cleaners
       # and execute after cleaners once complete
-      def cleanse_attributes!
-        # Collect parent cleaners first, starting with the top parent
-        cleaners = [self.class.send(:data_cleansing_cleaners)]
-        after_cleaners = [self.class.send(:data_cleansing_after_cleaners)]
-        klass = self.class.superclass
-        while klass != Object
-          cleaners << klass.send(:data_cleansing_cleaners) if klass.respond_to?(:data_cleansing_cleaners)
-          after_cleaners << klass.send(:data_cleansing_after_cleaners) if klass.respond_to?(:data_cleansing_after_cleaners)
-          klass = klass.superclass
-        end
-        cleaners.reverse_each {|cleaner| data_cleansing_execute_cleaners(cleaner)}
+      #
+      # Returns fields changed whilst cleaning the attributes
+      #
+      # Note: At this time the changes returned does not include any fields
+      #       modified in any of the after_cleaner methods
+      def cleanse_attributes!(verbose=DataCleansing.logger.debug?)
+        changes = {}
+        DataCleansing.logger.benchmark_info("#{self.class.name}#cleanse_attributes!", :payload => changes) do
+          # Collect parent cleaners first, starting with the top parent
+          cleaners = [self.class.send(:data_cleansing_cleaners)]
+          after_cleaners = [self.class.send(:data_cleansing_after_cleaners)]
+          klass = self.class.superclass
+          while klass != Object
+            cleaners << klass.send(:data_cleansing_cleaners) if klass.respond_to?(:data_cleansing_cleaners)
+            after_cleaners << klass.send(:data_cleansing_after_cleaners) if klass.respond_to?(:data_cleansing_after_cleaners)
+            klass = klass.superclass
+          end
+          # Capture all modified fields if log_level is :debug or :trace
+          cleaners.reverse_each {|cleaner| changes.merge!(data_cleansing_execute_cleaners(cleaner, verbose))}
 
-        # Execute the after cleaners, starting with the parent after cleanse methods
-        after_cleaners.reverse_each {|a| a.each {|method| send(method)} }
-        true
+          # Execute the after cleaners, starting with the parent after cleanse methods
+          after_cleaners.reverse_each {|a| a.each {|method| send(method)} }
+        end
+        changes
       end
 
       private
 
       # Run each of the cleaners in the order they are listed in the array
-      def data_cleansing_execute_cleaners(cleaners)
+      # Returns a hash of before and after values of what was cleansed
+      # Parameters
+      #   cleaners
+      #     List of cleaners to run
+      #
+      #   verbose [true|false]
+      #     Whether to include all the fields cleansed or just the fields that
+      #     were cleansed to nil
+      def data_cleansing_execute_cleaners(cleaners, verbose = false)
         return false if cleaners.nil?
 
         # Capture all changes to attributes if the log level is :info or greater
-        changes = {} if DataCleansing.logger.info?
-        # Capture all modified fields if log_level is :debug or :trace
-        verbose = DataCleansing.logger.debug?
+        changes = {}
 
-        DataCleansing.logger.benchmark_info("cleanse_attributes!", :payload => changes) do
-          cleaners.each do |cleaner_struct|
-            params = cleaner_struct.params
-            attrs  = cleaner_struct.attributes
+        cleaners.each do |cleaner_struct|
+          params = cleaner_struct.params
+          attrs  = cleaner_struct.attributes
 
-            # Special case to include :all fields
-            # Only works with ActiveRecord based models, not supported with regular Ruby models
-            if attrs.include?(:all) && defined?(ActiveRecord) && respond_to?(:attributes)
-              attrs = attributes.keys.collect{|i| i.to_sym}
-              attrs.delete(:id)
+          # Special case to include :all fields
+          # Only works with ActiveRecord based models, not supported with regular Ruby models
+          if attrs.include?(:all) && defined?(ActiveRecord) && respond_to?(:attributes)
+            attrs = attributes.keys.collect{|i| i.to_sym}
+            attrs.delete(:id)
 
-              # Remove serialized_attributes if any, from the :all condition
-              if self.class.respond_to?(:serialized_attributes)
-                serialized_attrs = self.class.serialized_attributes.keys
-                attrs -= serialized_attrs.collect{|i| i.to_sym} if serialized_attrs
-              end
-
-              # Replace any encrypted attributes with their non-encrypted versions if any
-              if defined?(SymmetricEncryption) && self.class.respond_to?(:encrypted_attributes)
-                self.class.encrypted_attributes.each_pair do |clear, encrypted|
-                  if attrs.include?(encrypted.to_sym)
-                    attrs.delete(encrypted.to_sym)
-                    attrs << clear.to_sym
-                  end
-                end
-              end
-
-              # Explicitly remove specified attributes from cleansing
-              if except = params[:except]
-                attrs -= except
-              end
-
+            # Remove serialized_attributes if any, from the :all condition
+            if self.class.respond_to?(:serialized_attributes)
+              serialized_attrs = self.class.serialized_attributes.keys
+              attrs -= serialized_attrs.collect{|i| i.to_sym} if serialized_attrs
             end
 
-            attrs.each do |attr|
-              # Under ActiveModel for Rails and Mongoid need to retrieve raw value
-              # before data type conversion
-              value = if respond_to?(:read_attribute_before_type_cast) && has_attribute?(attr.to_s)
-                read_attribute_before_type_cast(attr.to_s)
-              else
-                send(attr.to_sym)
+            # Replace any encrypted attributes with their non-encrypted versions if any
+            if defined?(SymmetricEncryption) && self.class.respond_to?(:encrypted_attributes)
+              self.class.encrypted_attributes.each_pair do |clear, encrypted|
+                if attrs.include?(encrypted.to_sym)
+                  attrs.delete(encrypted.to_sym)
+                  attrs << clear.to_sym
+                end
               end
+            end
 
-              # No need to clean if attribute is nil
-              unless value.nil?
-                new_value = self.class.send(:data_cleansing_clean,cleaner_struct, value, self)
+            # Explicitly remove specified attributes from cleansing
+            if except = params[:except]
+              attrs -= except
+            end
 
-                if new_value != value
-                  # Update value only if it has changed
-                  send("#{attr.to_sym}=".to_sym, new_value)
+          end
 
-                  # Capture changed attributes
-                  if changes
-                    # Mask sensitive attributes when logging
-                    masked = DataCleansing.masked_attributes.include?(attr.to_sym)
-                    new_value = :masked if masked && !new_value.nil?
-                    if previous = changes[attr.to_sym]
-                      previous[:after] = new_value
-                    else
-                      if new_value.nil? || verbose
-                        changes[attr.to_sym] = {
-                          :before => masked ? :masked : value,
-                          :after  => new_value
-                        }
-                      end
+          attrs.each do |attr|
+            # Under ActiveModel for Rails and Mongoid need to retrieve raw value
+            # before data type conversion
+            value = if respond_to?(:read_attribute_before_type_cast) && has_attribute?(attr.to_s)
+              read_attribute_before_type_cast(attr.to_s)
+            else
+              send(attr.to_sym)
+            end
+
+            # No need to clean if attribute is nil
+            unless value.nil?
+              new_value = self.class.send(:data_cleansing_clean,cleaner_struct, value, self)
+
+              if new_value != value
+                # Update value only if it has changed
+                send("#{attr.to_sym}=".to_sym, new_value)
+
+                # Capture changed attributes
+                if changes
+                  # Mask sensitive attributes when logging
+                  masked = DataCleansing.masked_attributes.include?(attr.to_sym)
+                  new_value = :masked if masked && !new_value.nil?
+                  if previous = changes[attr.to_sym]
+                    previous[:after] = new_value
+                  else
+                    if new_value.nil? || verbose
+                      changes[attr.to_sym] = {
+                        :before => masked ? :masked : value,
+                        :after  => new_value
+                      }
                     end
                   end
                 end
               end
-
             end
           end
         end
-        nil
+        changes
       end
+
     end
 
     def self.included(base)
