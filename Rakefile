@@ -16,7 +16,7 @@ task :gem  do |t|
     s.platform    = Gem::Platform::RUBY
     s.authors     = ['Reid Morrison']
     s.email       = ['reidmo@gmail.com']
-    s.homepage    = 'https://github.com/ClarityServices/data_cleansing'
+    s.homepage    = 'https://github.com/reidmorrison/data_cleansing'
     s.date        = Date.today.to_s
     s.summary     = "Data Cleansing framework for Ruby, and Ruby on Rails"
     s.description = "Data Cleansing framework for Ruby with additional support for Rails and Mongoid"
