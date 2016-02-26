@@ -1,18 +1,5 @@
-# Allow examples to be run in-place without requiring a gem install
-$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
-
-require 'rubygems'
-require 'test/unit'
-require 'shoulda'
-# Load ActiveRecord before loading data_cleansing so that the AR extensions
-# are loaded
+require_relative 'test_helper'
 require 'active_record'
-require 'data_cleansing'
-require 'semantic_logger'
-
-# Register an appender if one is not already registered
-SemanticLogger.default_level = :trace
-SemanticLogger.add_appender('test.log') if SemanticLogger.appenders.size == 0
 
 ActiveRecord::Base.logger = SemanticLogger[ActiveRecord::Base]
 ActiveRecord::Base.configurations = {
@@ -36,29 +23,12 @@ ActiveRecord::Schema.define :version => 0 do
   end
 end
 
-# Define a global cleaner
-DataCleansing.register_cleaner(:strip) {|string| string.strip}
-
 # Log data cleansing result
 # Set to :warn or higher to disable
 DataCleansing.logger.level = :debug
 
 # Set the Global list of fields to be masked
 DataCleansing.register_masked_attributes :ssn, :bank_account_number
-
-# Removes all non-digit characters, except '.' then truncates
-# the result to an integer string
-# Returns nil if no digits are present in the string
-DataCleansing.register_cleaner(:digits_to_integer) do |integer|
-  if integer.kind_of?(String)
-    # Remove Non-Digit Chars, except for '.'
-    integer = integer.gsub(/[^0-9\.]/, '')
-    integer.length > 0 ? integer.to_i : nil
-  else
-    integer
-  end
-end
-
 
 class User < ActiveRecord::Base
   include DataCleansing::Cleanse
@@ -73,7 +43,7 @@ class User < ActiveRecord::Base
   cleanse :address1, :address2, :instance_var, :cleaner => Proc.new {|string| "<< #{string.strip} >>"}
 
   # Custom Zip Code cleaner
-  cleanse :zip_code, :cleaner => :digits_to_integer
+  cleanse :zip_code, :cleaner => :string_to_integer
 
   # Automatically cleanse data before validation
   before_validation :cleanse_attributes!
@@ -94,20 +64,20 @@ class User2 < ActiveRecord::Base
   cleanse :first_name, :cleaner => Proc.new {|string| "$#{string}$"}
 
   # Custom Zip Code cleaner
-  cleanse :zip_code, :cleaner => :digits_to_integer
+  cleanse :zip_code, :cleaner => :string_to_integer
 
   # Automatically cleanse data before validation
   before_validation :cleanse_attributes!
 end
 
-class ActiveRecordTest < Test::Unit::TestCase
-  context "ActiveRecord Models" do
+class ActiveRecordTest < Minitest::Test
+  describe "ActiveRecord Models" do
 
-    should 'have globally registered cleaner' do
+    it 'have globally registered cleaner' do
       assert DataCleansing.cleaner(:strip)
     end
 
-    should 'Model.cleanse_attribute' do
+    it 'Model.cleanse_attribute' do
       assert_equal 'joe',                 User.cleanse_attribute(:first_name,   '    joe   ')
       assert_equal 'black',               User.cleanse_attribute(:last_name,    "\n  black\n")
       assert_equal '<< 2632 Brown St >>', User.cleanse_attribute(:address1,     "2632 Brown St   \n")
@@ -115,8 +85,8 @@ class ActiveRecordTest < Test::Unit::TestCase
       assert_equal 12345,                 User.cleanse_attribute(:zip_code,     "\n\tblah 12345badtext\n")
     end
 
-    context "with user" do
-      setup do
+    describe "with user" do
+      before do
         @user = User.new(
           :first_name   => '    joe   ',
           :last_name    => "\n  black\n",
@@ -126,30 +96,30 @@ class ActiveRecordTest < Test::Unit::TestCase
         )
       end
 
-      should 'only have 3 cleaners' do
+      it 'only have 3 cleaners' do
         assert_equal 3, User.send(:data_cleansing_cleaners).size, User.send(:data_cleansing_cleaners)
       end
 
-      should 'cleanse_attributes! using global cleaner' do
+      it 'cleanse_attributes! using global cleaner' do
         assert_equal true, @user.valid?
         assert_equal 'joe', @user.first_name
         assert_equal 'black', @user.last_name
       end
 
-      should 'cleanse_attributes! using attribute specific custom cleaner' do
+      it 'cleanse_attributes! using attribute specific custom cleaner' do
         assert_equal true, @user.valid?
         assert_equal '<< 2632 Brown St >>', @user.address1
         assert_equal '<< instance >>', @user.instance_var
       end
 
-      should 'cleanse_attributes! using global cleaner using rails extensions' do
+      it 'cleanse_attributes! using global cleaner using rails extensions' do
         @user.cleanse_attributes!
         assert_equal 12345, @user.zip_code
       end
     end
 
-    context "with user2" do
-      setup do
+    describe "with user2" do
+      before do
         @user = User2.new(
           :first_name => '    joe   ',
           :last_name  => "\n  black\n",
@@ -159,16 +129,16 @@ class ActiveRecordTest < Test::Unit::TestCase
         )
       end
 
-      should 'have 4 cleaners defined' do
+      it 'have 4 cleaners defined' do
         assert_equal 4, User2.send(:data_cleansing_cleaners).size, User2.send(:data_cleansing_cleaners)
       end
 
-      should 'have 3 attributes cleaners defined' do
+      it 'have 3 attributes cleaners defined' do
         # :all, :first_name, :zip_code
         assert_equal 3, User2.send(:data_cleansing_attribute_cleaners).size, User2.send(:data_cleansing_attribute_cleaners)
       end
 
-      should 'cleanse_attributes! clean all attributes' do
+      it 'cleanse_attributes! clean all attributes' do
         assert_equal true, @user.valid?
         assert_equal '$<< @joe@ >>$', @user.first_name, User2.send(:data_cleansing_cleaners)
         assert_equal '@black@', @user.last_name

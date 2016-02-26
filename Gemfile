@@ -1,21 +1,18 @@
 source 'https://rubygems.org'
-gem 'concurrent-ruby'
-gem 'semantic_logger'
 
-group :test do
-  gem "shoulda"
+gemspec
 
-  gem "activerecord"
-  gem 'sqlite3', :platform => :ruby
+gem 'rake'
+gem 'minitest'
+gem 'minitest-reporters'
+gem 'minitest-stub_any_instance'
 
-  platforms :jruby do
-    gem 'jdbc-sqlite3'
-    gem 'activerecord-jdbcsqlite3-adapter'
-  end
+gem 'awesome_print'
 
-  gem "mongoid"
-end
+gem 'activerecord'
+gem 'sqlite3', :platform => :ruby
 
-group :develop do
-  gem 'awesome_print'
+platforms :jruby do
+  gem 'jdbc-sqlite3'
+  gem 'activerecord-jdbcsqlite3-adapter'
 end
