@@ -2,14 +2,14 @@ module DataCleansing
   include SemanticLogger::Loggable
 
   # Global Data Cleansers
-  @@global_cleaners     = ThreadSafe::Hash.new
-  @@masked_attributes   = ThreadSafe::Array.new
+  @@global_cleaners     = Concurrent::Hash.new
+  @@masked_attributes   = Concurrent::Array.new
 
   # Register a new cleaner
   # Replaces any existing cleaner with the same name
-  def self.register_cleaner(cleaner, &block)
-    raise "Must supply a Proc with the cleaner" unless block
-    @@global_cleaners[cleaner.to_sym] = block
+  def self.register_cleaner(name, cleaner = nil, &block)
+    raise "Must supply a Proc with the cleaner" unless block || cleaner
+    @@global_cleaners[name.to_sym] = cleaner || block
   end
 
   # Returns the cleaner matching the supplied cleaner name

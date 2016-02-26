@@ -1,7 +1,7 @@
 data_cleansing
 ==============
 
-Data Cleansing framework for Ruby with additional support for Rails and Mongoid
+Data Cleansing framework for Ruby, Rails, Mongoid and MongoMapper.
 
 * http://github.com/reidmorrison/data_cleansing
 
@@ -319,9 +319,9 @@ tries to convert it to an integer or float.
 
 DataCleansing requires the following dependencies
 
-* Ruby V1.8.7, V1.9.3 or V2 and greater
-* Rails V2 or greater for Rails integration ( Only if Rails is being used )
-* Mongoid V2 or greater for Mongoid integration ( Only if Mongoid is being used )
+* Ruby V1.9.3, V2 and greater
+* Rails V3.2 (Active Model) or greater for Rails integration ( Only if Rails is being used )
+* Mongoid and Mongomapper supporting Active Model V3.2 or greater ( Only if Mongoid or MongoMapper is being used )
 
 ## Meta
 

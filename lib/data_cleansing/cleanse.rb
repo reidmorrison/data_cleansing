@@ -1,3 +1,4 @@
+require 'data_cleansing/cleaners'
 module DataCleansing
   # Mix-in to add cleaner
   module Cleanse
@@ -17,7 +18,7 @@ module DataCleansing
 
         # Create shortcuts to cleaners for each attribute for use by .cleanse_attribute
         attributes.each do |attr|
-          (data_cleansing_attribute_cleaners[attr] ||= ThreadSafe::Array.new) << cleaner
+          (data_cleansing_attribute_cleaners[attr] ||= Concurrent::Array.new) << cleaner
         end
         cleaner
       end
@@ -72,17 +73,17 @@ module DataCleansing
 
       # Array of cleaners to execute against this model and it's children
       def data_cleansing_cleaners
-        @data_cleansing_cleaners ||= ThreadSafe::Array.new
+        @data_cleansing_cleaners ||= Concurrent::Array.new
       end
 
       # Array of cleaners to execute against this model and it's children
       def data_cleansing_after_cleaners
-        @data_cleansing_after_cleaners ||= ThreadSafe::Array.new
+        @data_cleansing_after_cleaners ||= Concurrent::Array.new
       end
 
       # Hash of attributes to clean with their corresponding cleaner
       def data_cleansing_attribute_cleaners
-        @data_cleansing_attribute_cleaners ||= ThreadSafe::Hash.new
+        @data_cleansing_attribute_cleaners ||= Concurrent::Hash.new
       end
 
       private
@@ -100,17 +101,22 @@ module DataCleansing
         return if cleaner_struct.nil? || value.nil?
         # Duplicate value in case cleaner uses methods such as gsub!
         new_value = value.is_a?(String) ? value.dup : value
-        cleaner_struct.cleaners.each do |cleaner|
+        cleaner_struct.cleaners.each do |name|
           # Cleaner itself could be a custom Proc, otherwise do a global lookup for it
-          proc = cleaner.is_a?(Proc) ? cleaner : DataCleansing.cleaner(cleaner.to_sym)
-          raise "No cleaner defined for #{cleaner.inspect}" unless proc
+          proc = name.is_a?(Proc) ? name : DataCleansing.cleaner(name.to_sym)
+          raise "No cleaner defined for #{name.inspect}" unless proc
 
-          new_value = if object
-            # Call the cleaner proc within the scope (binding) of the object
-            proc.arity == 1 ? object.instance_exec(new_value, &proc) : object.instance_exec(new_value, cleaner_struct.params, &proc)
+          if proc.is_a?(Proc)
+            new_value = if object
+              # Call the cleaner proc within the scope (binding) of the object
+              proc.arity == 1 ? object.instance_exec(new_value, &proc) : object.instance_exec(new_value, cleaner_struct.params, &proc)
+            else
+              proc.arity == 1 ? proc.call(new_value) : proc.call(new_value, cleaner_struct.params)
+            end
           else
-            proc.arity == 1 ? proc.call(new_value) : proc.call(new_value, cleaner_struct.params)
+            new_value = (proc.method(:call).arity == 1 ? proc.call(new_value) : proc.call(new_value, cleaner_struct.params))
           end
+
         end
         new_value
       end

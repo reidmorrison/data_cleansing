@@ -1,4 +1,4 @@
-require 'thread_safe'
+require 'concurrent'
 require 'semantic_logger'
 require 'data_cleansing/version'
 require 'data_cleansing/data_cleansing'
