@@ -95,16 +95,6 @@ module Cleaners
   end
   DataCleansing.register_cleaner(:compress_whitespace, CompressWhitespace)
 
-  # Compress double spaces to a single space
-  module CompressDoubleSpace
-    def self.call(string)
-      return string unless string.is_a?(String)
-
-      string.gsub!('  ', ' ') || string
-    end
-  end
-  DataCleansing.register_cleaner(:compress_double_space, CompressDoubleSpace)
-
   # Remove Non-Digit Chars
   # Returns nil if no digit characters present
   module DigitsOnly
