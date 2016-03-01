@@ -51,8 +51,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(HTML_MARKUP) do
-        match = $1.dup
+      string.gsub!(HTML_MARKUP) do |match|
         case match.downcase
         when 'amp' then
           '&'

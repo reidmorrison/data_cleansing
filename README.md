@@ -251,7 +251,7 @@ in a Rails initializer as follows:
 
 ```ruby
 SemanticLogger.default_level = Rails.logger.level
-SemanticLogger.add_appender(Rails.logger)
+SemanticLogger.add_appender(logger: Rails.logger)
 ```
 
 By changing the log level of DataCleansing itself the type of output for data
@@ -338,7 +338,7 @@ Reid Morrison :: reidmo@gmail.com :: @reidmorrison
 
 ## License
 
-Copyright 2013, 2014 Reid Morrison
+Copyright 2013, 2014, 2015, 2016 Reid Morrison
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
