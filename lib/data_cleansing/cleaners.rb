@@ -45,7 +45,7 @@ module Cleaners
   DataCleansing.register_cleaner(:remove_non_printable, RemoveNonPrintable)
 
   # Remove HTML Markup
-  module RemoveHTMLMarkup
+  module ReplaceHTMLMarkup
     HTML_MARKUP = Regexp.compile(/&(amp|quot|gt|lt|apos|nbsp);/in)
 
     def self.call(string)
@@ -53,17 +53,17 @@ module Cleaners
 
       string.gsub!(HTML_MARKUP) do |match|
         case match.downcase
-        when 'amp' then
+        when '&amp;' then
           '&'
-        when 'quot' then
+        when '&quot;' then
           '"'
-        when 'gt' then
+        when '&gt;' then
           '>'
-        when 'lt' then
+        when '&lt;' then
           '<'
-        when 'apos' then
+        when '&apos;' then
           "'"
-        when 'nbsp' then
+        when '&nbsp;' then
           ' '
         else
           "&#{match};"
@@ -71,16 +71,25 @@ module Cleaners
       end || string
     end
   end
-  DataCleansing.register_cleaner(:remove_html_markup, RemoveHTMLMarkup)
+  DataCleansing.register_cleaner(:replace_html_markup, ReplaceHTMLMarkup)
 
-  module ReplaceURIChars
+  module UnescapeURI
     def self.call(string)
       return string unless string.is_a?(String)
 
       URI.unescape(string)
     end
   end
-  DataCleansing.register_cleaner(:replace_uri_chars, ReplaceURIChars)
+  DataCleansing.register_cleaner(:unescape_uri, UnescapeURI)
+
+  module EscapeURI
+    def self.call(string)
+      return string unless string.is_a?(String)
+
+      URI.escape(string)
+    end
+  end
+  DataCleansing.register_cleaner(:escape_uri, EscapeURI)
 
   # Compress multiple whitespace to a single space
   module CompressWhitespace
@@ -123,15 +132,39 @@ module Cleaners
   end
   DataCleansing.register_cleaner(:string_to_integer, StringToInteger)
 
+  # Returns [Integer] after removing all non-digit characters, except '.'
+  # Returns nil if no digits are present in the string.
+  module StringToFloat
+    NUMERIC = Regexp.compile(/[^0-9\.]/)
+
+    def self.call(string)
+      return string unless string.is_a?(String)
+
+      # Remove Non-Digit Chars, except for '.'
+      string.gsub!(NUMERIC, '')
+      string.length > 0 ? string.to_f : nil
+    end
+  end
+  DataCleansing.register_cleaner(:string_to_float, StringToFloat)
+
   # Convert a Date to a Time at the end of day for that date (YYYY-MM-DD 23:59:59)
   # Ex: 2015-12-31 becomes 2015-12-31 23:59:59
   # If something other than a Date object is passed in, it just passes through.
-  module DateToTimeAtEndOfDay
-    def self.call(date)
-      return date unless date.kind_of?(Date)
-
-      date.to_time.end_of_day
+  #
+  # Note: Only works if ActiveSupport is also loaded since it defines Time#end_of_day.
+  module EndOfDay
+    def self.call(datetime)
+      case datetime
+      when String
+        Time.parse(datetime).end_of_day
+      when Date
+        datetime.to_time.end_of_day
+      when Time
+        datetime.end_of_day
+      else
+        datetime
+      end
     end
   end
-  DataCleansing.register_cleaner(:date_to_time_at_end_of_day, DateToTimeAtEndOfDay)
+  DataCleansing.register_cleaner(:end_of_day, EndOfDay)
 end
