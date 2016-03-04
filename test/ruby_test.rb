@@ -75,6 +75,7 @@ class RubyTest < Minitest::Test
       assert_equal 'joe',                 RubyUserChild.cleanse_attribute(:first_name, '    joe   '), RubyUserChild.send(:data_cleansing_attribute_cleaners)
       assert_equal 'black',               RubyUserChild.cleanse_attribute(:last_name,  "\n  black\n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
       assert_equal '<< 2632 Brown St >>', RubyUserChild.cleanse_attribute(:address1,   "2632 Brown St   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal 3,                     RubyUserChild.cleanse_attribute(:first_name, 3), RubyUserChild.send(:data_cleansing_attribute_cleaners)
     end
 
     describe "with ruby user" do
