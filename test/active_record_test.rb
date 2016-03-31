@@ -10,7 +10,7 @@ ActiveRecord::Base.configurations = {
     'timeout'  => 5000
   }
 }
-ActiveRecord::Base.establish_connection('test')
+ActiveRecord::Base.establish_connection(:test)
 
 ActiveRecord::Schema.define :version => 0 do
   create_table :users, :force => true do |t|

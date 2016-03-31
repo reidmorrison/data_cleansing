@@ -1,4 +1,4 @@
-require 'uri'
+require 'cgi'
 module Cleaners
   # Strip leading and trailing whitespace
   module Strip
@@ -44,7 +44,7 @@ module Cleaners
   end
   DataCleansing.register_cleaner(:remove_non_printable, RemoveNonPrintable)
 
-  # Remove HTML Markup
+  # Unescape HTML Markup ( case-insensitive )
   module ReplaceHTMLMarkup
     HTML_MARKUP = Regexp.compile(/&(amp|quot|gt|lt|apos|nbsp);/in)
 
@@ -77,7 +77,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      URI.unescape(string)
+      CGI.unescape(string)
     end
   end
   DataCleansing.register_cleaner(:unescape_uri, UnescapeURI)
@@ -86,7 +86,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      URI.escape(string)
+      CGI.escape(string)
     end
   end
   DataCleansing.register_cleaner(:escape_uri, EscapeURI)

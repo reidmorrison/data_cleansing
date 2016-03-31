@@ -8,7 +8,8 @@ class CleanersTest < Minitest::Test
     attr_accessor :first_name, :last_name, :address1, :address2,
       :make_this_upper, :clean_non_word, :clean_non_printable,
       :clean_html, :clean_from_uri, :clean_to_uri, :clean_whitespace,
-      :clean_digits_only, :clean_to_integer, :clean_to_float, :clean_end_of_day
+      :clean_digits_only, :clean_to_integer, :clean_to_float, :clean_end_of_day,
+      :clean_order
 
     cleanse :first_name, :last_name, :address1, :address2, cleaner: :strip
     cleanse :make_this_upper, cleaner: :upcase
@@ -22,6 +23,10 @@ class CleanersTest < Minitest::Test
     cleanse :clean_to_integer, cleaner: :string_to_integer
     cleanse :clean_to_float, cleaner: :string_to_float
     cleanse :clean_end_of_day, cleaner: :end_of_day
+
+    # Call cleaners in the order they are defined
+    cleanse :clean_order, cleaner: [:upcase, :strip]
+    cleanse :clean_order, cleaner: -> val { val == 'BLAH' ? ' yes ' : ' no ' }
   end
 
   describe 'Cleaners' do
@@ -140,17 +145,17 @@ class CleanersTest < Minitest::Test
     end
 
     describe '#escape_uri' do
-      it 'converts %20' do
+      it 'converts spaces' do
         user              = User.new
         user.clean_to_uri = 'Jim  Bob '
         user.cleanse_attributes!
-        assert_equal 'Jim%20%20Bob%20', user.clean_to_uri
+        assert_equal 'Jim++Bob+', user.clean_to_uri
       end
-      it 'converts %20 only' do
+      it 'converts space only' do
         user              = User.new
         user.clean_to_uri = ' '
         user.cleanse_attributes!
-        assert_equal '%20', user.clean_to_uri
+        assert_equal '+', user.clean_to_uri
       end
     end
 
@@ -203,6 +208,13 @@ class CleanersTest < Minitest::Test
       user.clean_end_of_day = Time.parse('2016-03-03 14:33:44 +0000')
       user.cleanse_attributes!
       assert_equal Time.parse('2016-03-03 23:59:59 +0000').to_i, user.clean_end_of_day.to_i
+    end
+
+    it 'cleans in the order defined' do
+      user             = User.new
+      user.clean_order = '  blah '
+      user.cleanse_attributes!
+      assert_equal ' yes ', user.clean_order
     end
 
   end

@@ -1,7 +1,7 @@
 data_cleansing
 ==============
 
-Data Cleansing framework for Ruby, Rails, Mongoid and MongoMapper.
+Data Cleansing framework for Ruby.
 
 * http://github.com/reidmorrison/data_cleansing
 
@@ -12,12 +12,8 @@ or trailing blanks and even newlines.
 Similarly it would be useful to be able to attach a cleansing solution to a field
 in a model and have the data cleansed transparently when required.
 
-DataCleansing is a framework that allows any data cleansing to be applied to
-specific attributes or fields. At this time it does not supply the cleaning
-solutions themselves since they are usually straight forward, or so complex
-that they don't tend to be too useful to others. However, over time built-in
-cleansing solutions may be added. Feel free to submit any suggestions via a ticket
-or pull request.
+DataCleansing is a framework that allows data cleansing to be applied to
+specific attributes or fields.
 
 ## Features
 
@@ -296,24 +292,6 @@ gem 'data_cleansing'
 Install the Gem with bundler
 
     bundle install
-
-## Architecture
-
-DataCleansing has been designed to support externalized data cleansing routines.
-In this way the data cleansing routine itself can be loaded from a datastore and
-applied dynamically at runtime.
-Although not supported out of the box, this design allows for example for the
-data cleansing routines to be stored in something like [ZooKeeper](http://zookeeper.apache.org/).
-Then any changes to the data cleansing routines can be pushed out immediately to
-every server that needs it.
-
-DataCleansing is designed to support any Ruby model. In this way it can be used
-in just about any ORM or DOM. For example, it currently easily supports both
-Rails and Mongoid models. Some extensions have been added to support these frameworks.
-
-For example, in Rails it obtains the raw data value before Rails has converted it.
-Which is useful for cleansing integer or float fields as raw strings before Rails
-tries to convert it to an integer or float.
 
 ## Dependencies
 
