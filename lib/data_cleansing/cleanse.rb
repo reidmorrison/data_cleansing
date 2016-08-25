@@ -103,7 +103,7 @@ module DataCleansing
         # Duplicate value in case cleaner uses methods such as gsub!
         new_value = value.is_a?(String) ? value.dup : value
         cleaner_struct.cleaners.each do |name|
-          new_value = DataCleansing.clean(name, new_value, binding)
+          new_value = DataCleansing.clean(name, new_value, cleaner_struct.params, binding)
         end
         new_value
       end
