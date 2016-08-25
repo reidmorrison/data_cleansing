@@ -20,6 +20,16 @@ module Cleaners
   end
   DataCleansing.register_cleaner(:upcase, Upcase)
 
+  # Convert to downcase
+  module Downcase
+    def self.call(string)
+      return string unless string.is_a?(String)
+
+      string.downcase! || string
+    end
+  end
+  DataCleansing.register_cleaner(:downcase, Downcase)
+
   # Remove all non-word characters, including whitespace
   module RemoveNonWord
     NOT_WORDS = Regexp.compile(/\W/)

@@ -1,6 +1,4 @@
-require 'rake/clean'
 require 'rake/testtask'
-
 require_relative 'lib/data_cleansing/version'
 
 task :gem do
@@ -14,14 +12,9 @@ task publish: :gem do
   system "rm data_cleansing-#{DataCleansing::VERSION}.gem"
 end
 
-desc 'Run Test Suite'
-task :test do
-  Rake::TestTask.new(:functional) do |t|
-    t.test_files = FileList['test/**/*_test.rb']
-    t.verbose    = true
-  end
-
-  Rake::Task['functional'].invoke
+Rake::TestTask.new(:test) do |t|
+  t.pattern = 'test/**/*_test.rb'
+  t.verbose = true
 end
 
 task default: :test

@@ -7,10 +7,10 @@ module DataCleansing
     module ClassMethods
       # Define how to cleanse one or more attributes
       def cleanse(*args)
-        last = args.last
+        last       = args.last
         attributes = args.dup
-        params = (last.is_a?(Hash) && last.instance_of?(Hash)) ? attributes.pop.dup : {}
-        cleaners = Array(params.delete(:cleaner))
+        params     = (last.is_a?(Hash) && last.instance_of?(Hash)) ? attributes.pop.dup : {}
+        cleaners   = Array(params.delete(:cleaner))
         raise(ArgumentError, "Mandatory :cleaner parameter is missing: #{params.inspect}") unless cleaners
 
         cleaner = DataCleansingCleaner.new(cleaners, attributes, params)
@@ -58,7 +58,7 @@ module DataCleansing
 
         # Collect parent cleaners first, starting with the top parent
         cleaners = []
-        klass = self
+        klass    = self
         while klass != Object
           if klass.respond_to?(:data_cleansing_attribute_cleaners)
             cleaners += klass.data_cleansing_attribute_cleaners[:all] || []
@@ -68,7 +68,7 @@ module DataCleansing
         end
         # Support Fixnum values
         cleansed_value = value.is_a?(Fixnum) ? value : value.dup
-        cleaners.reverse_each {|cleaner| cleansed_value = data_cleansing_clean(cleaner, cleansed_value, object) if cleaner}
+        cleaners.reverse_each { |cleaner| cleansed_value = data_cleansing_clean(cleaner, cleansed_value, object) if cleaner }
         cleansed_value
       end
 
@@ -91,33 +91,19 @@ module DataCleansing
 
       # Returns the supplied value cleansed using the supplied cleaner
       # Parameters
-      #   object
+      #   binding
       #     If supplied the cleansing will be performed within the scope of
-      #     that object so that cleaners can read and write to attributes
-      #     of that object
+      #     that binding so that cleaners can read and write to attributes
+      #     of that binding
       #
       # No logging of cleansing is performed by this method since the value
       # itself is not modified
-      def data_cleansing_clean(cleaner_struct, value, object=nil)
+      def data_cleansing_clean(cleaner_struct, value, binding = nil)
         return if cleaner_struct.nil? || value.nil?
         # Duplicate value in case cleaner uses methods such as gsub!
         new_value = value.is_a?(String) ? value.dup : value
         cleaner_struct.cleaners.each do |name|
-          # Cleaner itself could be a custom Proc, otherwise do a global lookup for it
-          proc = name.is_a?(Proc) ? name : DataCleansing.cleaner(name.to_sym)
-          raise "No cleaner defined for #{name.inspect}" unless proc
-
-          if proc.is_a?(Proc)
-            new_value = if object
-              # Call the cleaner proc within the scope (binding) of the object
-              proc.arity == 1 ? object.instance_exec(new_value, &proc) : object.instance_exec(new_value, cleaner_struct.params, &proc)
-            else
-              proc.arity == 1 ? proc.call(new_value) : proc.call(new_value, cleaner_struct.params)
-            end
-          else
-            new_value = (proc.method(:call).arity == 1 ? proc.call(new_value) : proc.call(new_value, cleaner_struct.params))
-          end
-
+          new_value = DataCleansing.clean(name, new_value, binding)
         end
         new_value
       end
@@ -136,19 +122,19 @@ module DataCleansing
         changes = {}
         DataCleansing.logger.benchmark_info("#{self.class.name}#cleanse_attributes!", :payload => changes) do
           # Collect parent cleaners first, starting with the top parent
-          cleaners = [self.class.send(:data_cleansing_cleaners)]
+          cleaners       = [self.class.send(:data_cleansing_cleaners)]
           after_cleaners = [self.class.send(:data_cleansing_after_cleaners)]
-          klass = self.class.superclass
+          klass          = self.class.superclass
           while klass != Object
             cleaners << klass.send(:data_cleansing_cleaners) if klass.respond_to?(:data_cleansing_cleaners)
             after_cleaners << klass.send(:data_cleansing_after_cleaners) if klass.respond_to?(:data_cleansing_after_cleaners)
             klass = klass.superclass
           end
           # Capture all modified fields if log_level is :debug or :trace
-          cleaners.reverse_each {|cleaner| changes.merge!(data_cleansing_execute_cleaners(cleaner, verbose))}
+          cleaners.reverse_each { |cleaner| changes.merge!(data_cleansing_execute_cleaners(cleaner, verbose)) }
 
           # Execute the after cleaners, starting with the parent after cleanse methods
-          after_cleaners.reverse_each {|a| a.each {|method| send(method)} }
+          after_cleaners.reverse_each { |a| a.each { |method| send(method) } }
         end
         changes
       end
@@ -177,13 +163,13 @@ module DataCleansing
           # Special case to include :all fields
           # Only works with ActiveRecord based models, not supported with regular Ruby models
           if attrs.include?(:all) && defined?(ActiveRecord) && respond_to?(:attributes)
-            attrs = attributes.keys.collect{|i| i.to_sym}
+            attrs = attributes.keys.collect { |i| i.to_sym }
             attrs.delete(:id)
 
             # Remove serialized_attributes if any, from the :all condition
             if self.class.respond_to?(:serialized_attributes)
               serialized_attrs = self.class.serialized_attributes.keys
-              attrs -= serialized_attrs.collect{|i| i.to_sym} if serialized_attrs
+              attrs            -= serialized_attrs.collect { |i| i.to_sym } if serialized_attrs
             end
 
             # Replace any encrypted attributes with their non-encrypted versions if any
@@ -206,15 +192,16 @@ module DataCleansing
           attrs.each do |attr|
             # Under ActiveModel for Rails and Mongoid need to retrieve raw value
             # before data type conversion
-            value = if respond_to?(:read_attribute_before_type_cast) && has_attribute?(attr.to_s)
-              read_attribute_before_type_cast(attr.to_s)
-            else
-              send(attr.to_sym)
-            end
+            value =
+              if respond_to?(:read_attribute_before_type_cast) && has_attribute?(attr.to_s)
+                read_attribute_before_type_cast(attr.to_s)
+              else
+                send(attr.to_sym)
+              end
 
             # No need to clean if attribute is nil
             unless value.nil?
-              new_value = self.class.send(:data_cleansing_clean,cleaner_struct, value, self)
+              new_value = self.class.send(:data_cleansing_clean, cleaner_struct, value, self)
 
               if new_value != value
                 # Update value only if it has changed
@@ -223,7 +210,7 @@ module DataCleansing
                 # Capture changed attributes
                 if changes
                   # Mask sensitive attributes when logging
-                  masked = DataCleansing.masked_attributes.include?(attr.to_sym)
+                  masked    = DataCleansing.masked_attributes.include?(attr.to_sym)
                   new_value = :masked if masked && !new_value.nil?
                   if previous = changes[attr.to_sym]
                     previous[:after] = new_value
@@ -247,7 +234,7 @@ module DataCleansing
 
     def self.included(base)
       base.class_eval do
-        extend  DataCleansing::Cleanse::ClassMethods
+        extend DataCleansing::Cleanse::ClassMethods
         include DataCleansing::Cleanse::InstanceMethods
       end
     end

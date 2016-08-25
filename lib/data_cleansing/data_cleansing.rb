@@ -27,4 +27,22 @@ module DataCleansing
     @@masked_attributes.freeze
   end
 
+  # Run the specified cleanser against the supplied value
+  def self.clean(name, value, binding = nil)
+    # Cleaner itself could be a custom Proc, otherwise do a global lookup for it
+    proc = name.is_a?(Proc) ? name : DataCleansing.cleaner(name.to_sym)
+    raise(ArgumentError, "No cleaner defined for #{name.inspect}") unless proc
+
+    if proc.is_a?(Proc)
+      if binding
+        # Call the cleaner proc within the scope (binding) of the binding
+        proc.arity == 1 ? binding.instance_exec(value, &proc) : binding.instance_exec(value, cleaner_struct.params, &proc)
+      else
+        proc.arity == 1 ? proc.call(value) : proc.call(value, cleaner_struct.params)
+      end
+    else
+      (proc.method(:call).arity == 1 ? proc.call(value) : proc.call(value, cleaner_struct.params))
+    end
+  end
+
 end
