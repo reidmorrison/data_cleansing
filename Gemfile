@@ -1,17 +1,5 @@
-source 'https://rubygems.org'
+eval File.read(File.expand_path('../gemfiles/Gemfile.common.rb', __FILE__)), nil, 'Gemfile.common.rb'
+
+gem 'activerecord', '~> 5.0'
 
 gemspec
-
-gem 'rake'
-gem 'minitest'
-gem 'minitest-reporters'
-
-gem 'awesome_print'
-
-gem 'activerecord'
-gem 'sqlite3', :platform => :ruby
-
-platforms :jruby do
-  gem 'jdbc-sqlite3'
-  gem 'activerecord-jdbcsqlite3-adapter'
-end
