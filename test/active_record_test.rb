@@ -20,6 +20,7 @@ ActiveRecord::Schema.define :version => 0 do
     t.string  :address2
     t.string  :ssn
     t.integer :zip_code
+    t.text    :text
   end
 end
 
@@ -54,8 +55,11 @@ class User2 < ActiveRecord::Base
   # Use the same table as User above
   self.table_name = 'users'
 
+  serialize :text
+
   # Test :all cleaner. Only works with ActiveRecord Models
-  cleanse :all, :cleaner => [:strip, Proc.new{|s| "@#{s}@"}], :except => [:address1, :zip_code]
+  # Must explicitly excelude :text since it is serialized
+  cleanse :all, :cleaner => [:strip, Proc.new{|s| "@#{s}@"}], :except => [:address1, :zip_code, :text]
 
   # Clean :first_name multiple times
   cleanse :first_name, :cleaner => Proc.new {|string| "<< #{string} >>"}
@@ -71,7 +75,7 @@ class User2 < ActiveRecord::Base
 end
 
 class ActiveRecordTest < Minitest::Test
-  describe "ActiveRecord Models" do
+  describe 'ActiveRecord Models' do
 
     it 'have globally registered cleaner' do
       assert DataCleansing.cleaner(:strip)
@@ -118,14 +122,15 @@ class ActiveRecordTest < Minitest::Test
       end
     end
 
-    describe "with user2" do
+    describe 'with user2' do
       before do
         @user = User2.new(
           :first_name => '    joe   ',
           :last_name  => "\n  black\n",
           :ssn        => "\n    123456789   \n  ",
           :address1   => "2632 Brown St   \n",
-          :zip_code   => "\n\t  blah\n"
+          :zip_code   => "\n\t  blah\n",
+          :text       => ["\n    123456789   \n  ", ' second ']
         )
       end
 
@@ -145,6 +150,7 @@ class ActiveRecordTest < Minitest::Test
         assert_equal "2632 Brown St   \n", @user.address1
         assert_equal "@123456789@", @user.ssn
         assert_equal nil, @user.zip_code, User2.send(:data_cleansing_cleaners)
+        assert_equal ["\n    123456789   \n  ", ' second '], @user.text
       end
 
     end

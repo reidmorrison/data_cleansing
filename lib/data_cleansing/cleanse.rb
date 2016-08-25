@@ -166,12 +166,6 @@ module DataCleansing
             attrs = attributes.keys.collect { |i| i.to_sym }
             attrs.delete(:id)
 
-            # Remove serialized_attributes if any, from the :all condition
-            if self.class.respond_to?(:serialized_attributes)
-              serialized_attrs = self.class.serialized_attributes.keys
-              attrs            -= serialized_attrs.collect { |i| i.to_sym } if serialized_attrs
-            end
-
             # Replace any encrypted attributes with their non-encrypted versions if any
             if defined?(SymmetricEncryption) && self.class.respond_to?(:encrypted_attributes)
               self.class.encrypted_attributes.each_pair do |clear, encrypted|
