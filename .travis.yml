@@ -1,25 +1,48 @@
 language: ruby
-
-gemfile:
-  - gemfiles/rails3_2.gemfile
-  - gemfiles/rails4_1.gemfile
-  - gemfiles/rails4_2.gemfile
-  - gemfiles/rails5_0.gemfile
-
-rvm:
-  - 2.3.8
-  - 2.4.6
-  - 2.5.5
-  - 2.6.3
-  - jruby-9.2.7.0
+bundler_args: --without development
 
 matrix:
-  exclude:
-    - rvm: jruby-1.7.25
-      gemfile: gemfiles/rails5_0.gemfile
-    - rvm: jruby-9.1.2.0
-      gemfile: gemfiles/rails5_0.gemfile
-    - rvm: 2.1.10
-      gemfile: gemfiles/rails5_0.gemfile
+  include:
+    - name: "Rails 4.2 on Ruby 2.3.8"
+      rvm: 2.3.8
+      gemfile: gemfiles/rails_4.2.gemfile
+
+    - name: "Rails 5.0 on Ruby 2.4.6"
+      rvm: 2.4.6
+      gemfile: gemfiles/rails_5.0.gemfile
+    - name: "Rails 5.1 on Ruby 2.4.6"
+      rvm: 2.4.6
+      gemfile: gemfiles/rails_5.1.gemfile
+    - name: "Rails 5.2 on Ruby 2.4.6"
+      rvm: 2.4.6
+      gemfile: gemfiles/rails_5.2.gemfile
+
+    - name: "Rails 5.0 on Ruby 2.5.5"
+      rvm: 2.5.5
+      gemfile: gemfiles/rails_5.0.gemfile
+    - name: "Rails 5.1 on Ruby 2.5.5"
+      rvm: 2.5.5
+      gemfile: gemfiles/rails_5.1.gemfile
+    - name: "Rails 5.2 on Ruby 2.5.5"
+      rvm: 2.5.5
+      gemfile: gemfiles/rails_5.2.gemfile
+
+    - name: "Rails 5.2 on Ruby 2.6.3"
+      rvm: 2.6.3
+      gemfile: gemfiles/rails_5.2.gemfile
+    - name: "Rails 6.0 on Ruby 2.6.3"
+      rvm: 2.6.3
+      gemfile: gemfiles/rails_6.0.gemfile
+
+    - name: "Rails 5.2 on JRuby 9.2.7.0"
+      rvm: jruby-9.2.7.0
+      gemfile: gemfiles/rails_5.2.gemfile
+
+  allow_failures:
+    - rvm: jruby-9.2.7.0
+    - gemfile: gemfiles/rails_6.0.gemfile
+
+jdk:
+  - openjdk10
 
 sudo: false
