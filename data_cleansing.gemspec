@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.authors     = ['Reid Morrison']
   s.email       = ['reidmo@gmail.com']
   s.homepage    = 'http://github.com/reidmorrison/data_cleansing'
-  s.summary     = 'Data Cleansing framework for Ruby, Rails, Mongoid and MongoMapper.'
+  s.summary     = 'Data Cleansing framework for Ruby, Rails, and Mongoid.'
   s.files       = Dir['lib/**/*', 'bin/*', 'LICENSE.txt', 'Rakefile', 'README.md']
   s.test_files  = Dir['test/**/*']
   s.license     = 'Apache-2.0'

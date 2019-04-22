@@ -1,12 +1,9 @@
-$LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
+ENV['RAILS_ENV'] = 'test'
 
-require 'yaml'
+require 'active_record'
 require 'minitest/autorun'
-require 'minitest/reporters'
-require 'awesome_print'
 require 'data_cleansing'
-
-MiniTest::Reporters.use! MiniTest::Reporters::SpecReporter.new
+require 'awesome_print'
 
 SemanticLogger.add_appender(file_name: 'test.log', formatter: :color)
 SemanticLogger.default_level = :debug

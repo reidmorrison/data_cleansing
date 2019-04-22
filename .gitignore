@@ -1,8 +1,9 @@
-.DS_Store
-nbproject/*
-*.gem
-.idea/*
-Gemfile.lock
-test.rb
-*.sqlite3
+.bundle/
 *.log
+*.gem
+/.idea
+*.DS_Store
+Gemfile.lock
+/gemfiles/*.lock
+*.sqlite3
+.rakeTasks
