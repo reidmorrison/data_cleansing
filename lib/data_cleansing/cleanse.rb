@@ -66,8 +66,8 @@ module DataCleansing
           end
           klass = klass.superclass
         end
-        # Support Fixnum values
-        cleansed_value = value.is_a?(Fixnum) ? value : value.dup
+        # Support Integer values
+        cleansed_value = value.is_a?(Integer) ? value : value.dup
         cleaners.reverse_each { |cleaner| cleansed_value = data_cleansing_clean(cleaner, cleansed_value, object) if cleaner }
         cleansed_value
       end
