@@ -1,4 +1,4 @@
-require_relative 'test_helper'
+require_relative "test_helper"
 
 # Non Cleansing base class
 class RubyUserBase
@@ -11,10 +11,10 @@ class RubyUser < RubyUserBase
   attr_accessor :first_name, :last_name, :address1, :address2
 
   # Use a global cleaner
-  cleanse :first_name, :last_name, :cleaner => :strip
+  cleanse :first_name, :last_name, cleaner: :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| "<< #{string.strip} >>"}
+  cleanse :address1, :address2, cleaner: proc { |string| "<< #{string.strip} >>" }
 
   # Execute after cleanser
   after_cleanse :name_check
@@ -31,7 +31,8 @@ end
 
 class RubyUserChild < RubyUser
   attr_accessor :gender
-  cleanse :gender, :cleaner => Proc.new {|gender| gender.to_s.strip.downcase}
+
+  cleanse :gender, cleaner: proc { |gender| gender.to_s.strip.downcase }
 end
 
 class RubyUser2
@@ -40,20 +41,20 @@ class RubyUser2
   attr_accessor :first_name, :last_name, :title, :address1, :address2, :gender
 
   # Use a global cleaner
-  cleanse :first_name, :last_name, :cleaner => :strip
+  cleanse :first_name, :last_name, cleaner: :strip
 
   # Define a once off cleaner
-  cleanse :address1, :address2, :cleaner => Proc.new {|string| string.strip}
+  cleanse :address1, :address2, cleaner: proc { |string| string.strip }
 
   # Use multiple cleaners, and a custom block
-  cleanse :title, :cleaner => [:strip, :upcase, Proc.new {|string| "#{string}." unless string.end_with?('.')}]
+  cleanse :title, cleaner: [:strip, :upcase, proc { |string| "#{string}." unless string.end_with?(".") }]
 
   # Change the cleansing rule based on the value of other attributes in that instance of user
   # The 'title' is retrieved from the current instance of the user
-  cleanse :gender, :cleaner => [
+  cleanse :gender, cleaner: [
     :strip,
     :upcase,
-    Proc.new do |gender|
+    proc do |gender|
       if (gender == "UNKNOWN") && (title == "MR.")
         "Male"
       else
@@ -65,113 +66,110 @@ end
 
 class RubyTest < Minitest::Test
   describe "Ruby Models" do
-
-    it 'have globally registered cleaner' do
+    it "have globally registered cleaner" do
       assert DataCleansing.cleaner(:strip)
     end
 
-    it 'Model.cleanse_attribute' do
-      assert_equal 'male',                RubyUserChild.cleanse_attribute(:gender,     "\n   Male   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
-      assert_equal 'joe',                 RubyUserChild.cleanse_attribute(:first_name, '    joe   '), RubyUserChild.send(:data_cleansing_attribute_cleaners)
-      assert_equal 'black',               RubyUserChild.cleanse_attribute(:last_name,  "\n  black\n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
-      assert_equal '<< 2632 Brown St >>', RubyUserChild.cleanse_attribute(:address1,   "2632 Brown St   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+    it "Model.cleanse_attribute" do
+      assert_equal "male",                RubyUserChild.cleanse_attribute(:gender,     "\n   Male   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal "joe",                 RubyUserChild.cleanse_attribute(:first_name, "    joe   "), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal "black",               RubyUserChild.cleanse_attribute(:last_name,  "\n  black\n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
+      assert_equal "<< 2632 Brown St >>", RubyUserChild.cleanse_attribute(:address1,   "2632 Brown St   \n"), RubyUserChild.send(:data_cleansing_attribute_cleaners)
       assert_equal 3,                     RubyUserChild.cleanse_attribute(:first_name, 3), RubyUserChild.send(:data_cleansing_attribute_cleaners)
     end
 
     describe "with ruby user" do
       before do
         @user = RubyUser.new
-        @user.first_name = '    joe   '
+        @user.first_name = "    joe   "
         @user.last_name = "\n  black\n"
         @user.address1 = "2632 Brown St   \n"
       end
 
-      it 'cleanse_attributes! using global cleaner' do
+      it "cleanse_attributes! using global cleaner" do
         @user.cleanse_attributes!
-        assert_equal 'joe', @user.first_name
-        assert_equal 'black', @user.last_name
+        assert_equal "joe", @user.first_name
+        assert_equal "black", @user.last_name
       end
 
-      it 'cleanse_attributes! using attribute specific custom cleaner' do
+      it "cleanse_attributes! using attribute specific custom cleaner" do
         @user.cleanse_attributes!
-        assert_equal '<< 2632 Brown St >>', @user.address1
+        assert_equal "<< 2632 Brown St >>", @user.address1
       end
 
-      it 'cleanse_attributes! not cleanse nil attributes' do
+      it "cleanse_attributes! not cleanse nil attributes" do
         @user.first_name = nil
         @user.cleanse_attributes!
         assert_nil @user.first_name
       end
 
-      it 'cleanse_attributes! call after cleaner' do
-        @user.first_name = 'Jack'
+      it "cleanse_attributes! call after cleaner" do
+        @user.first_name = "Jack"
         @user.last_name = nil
         @user.cleanse_attributes!
         assert_nil @user.first_name, @user.inspect
-        assert_equal 'Jack', @user.last_name, @user.inspect
+        assert_equal "Jack", @user.last_name, @user.inspect
       end
     end
 
     describe "with ruby user child" do
       before do
         @user = RubyUserChild.new
-        @user.first_name = '    joe   '
+        @user.first_name = "    joe   "
         @user.last_name  = "\n  black\n"
         @user.address1   = "2632 Brown St   \n"
         @user.gender     = "\n   Male   \n"
       end
 
-      it 'cleanse_attributes! using global cleaner' do
+      it "cleanse_attributes! using global cleaner" do
         @user.cleanse_attributes!
-        assert_equal 'joe', @user.first_name
-        assert_equal 'black', @user.last_name
+        assert_equal "joe", @user.first_name
+        assert_equal "black", @user.last_name
       end
 
-      it 'cleanse_attributes! using attribute specific custom cleaner' do
+      it "cleanse_attributes! using attribute specific custom cleaner" do
         @user.cleanse_attributes!
-        assert_equal '<< 2632 Brown St >>', @user.address1
+        assert_equal "<< 2632 Brown St >>", @user.address1
       end
 
-      it 'cleanse_attributes! not cleanse nil attributes' do
+      it "cleanse_attributes! not cleanse nil attributes" do
         @user.first_name = nil
         @user.cleanse_attributes!
         assert_nil @user.first_name
       end
 
-      it 'cleanse_attributes! clean child attributes' do
+      it "cleanse_attributes! clean child attributes" do
         @user.cleanse_attributes!
-        assert_equal 'male', @user.gender
+        assert_equal "male", @user.gender
       end
-
     end
 
     describe "with ruby user2" do
       before do
         @user = RubyUser2.new
-        @user.first_name = '    joe   '
+        @user.first_name = "    joe   "
         @user.last_name  = "\n  black\n"
         @user.address1   = "2632 Brown St   \n"
         @user.title      = "   \nmr   \n"
         @user.gender     = " Unknown  "
       end
 
-      it 'cleanse_attributes!' do
+      it "cleanse_attributes!" do
         @user.cleanse_attributes!
-        assert_equal 'joe', @user.first_name
-        assert_equal 'black', @user.last_name
-        assert_equal '2632 Brown St', @user.address1
+        assert_equal "joe", @user.first_name
+        assert_equal "black", @user.last_name
+        assert_equal "2632 Brown St", @user.address1
       end
 
-      it 'cleanse_attributes! with multiple cleaners' do
+      it "cleanse_attributes! with multiple cleaners" do
         @user.cleanse_attributes!
-        assert_equal 'MR.', @user.title
+        assert_equal "MR.", @user.title
       end
 
-      it 'cleanse_attributes! referencing other attributes' do
+      it "cleanse_attributes! referencing other attributes" do
         @user.cleanse_attributes!
-        assert_equal 'Male', @user.gender
+        assert_equal "Male", @user.gender
       end
     end
-
   end
 end

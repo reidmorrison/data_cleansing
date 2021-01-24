@@ -1,4 +1,4 @@
-require 'cgi'
+require "cgi"
 module Cleaners
   # Strip leading and trailing whitespace
   module Strip
@@ -37,7 +37,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(NOT_WORDS, '') || string
+      string.gsub!(NOT_WORDS, "") || string
     end
   end
   DataCleansing.register_cleaner(:remove_non_word, RemoveNonWord)
@@ -49,7 +49,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(NOT_PRINTABLE, '') || string
+      string.gsub!(NOT_PRINTABLE, "") || string
     end
   end
   DataCleansing.register_cleaner(:remove_non_printable, RemoveNonPrintable)
@@ -63,18 +63,18 @@ module Cleaners
 
       string.gsub!(HTML_MARKUP) do |match|
         case match.downcase
-        when '&amp;' then
-          '&'
-        when '&quot;' then
+        when "&amp;"
+          "&"
+        when "&quot;"
           '"'
-        when '&gt;' then
-          '>'
-        when '&lt;' then
-          '<'
-        when '&apos;' then
+        when "&gt;"
+          ">"
+        when "&lt;"
+          "<"
+        when "&apos;"
           "'"
-        when '&nbsp;' then
-          ' '
+        when "&nbsp;"
+          " "
         else
           "&#{match};"
         end
@@ -108,7 +108,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(WHITESPACE, ' ') || string
+      string.gsub!(WHITESPACE, " ") || string
     end
   end
   DataCleansing.register_cleaner(:compress_whitespace, CompressWhitespace)
@@ -121,7 +121,7 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(DIGITS, '')
+      string.gsub!(DIGITS, "")
       string.length > 0 ? string : nil
     end
   end
@@ -130,13 +130,13 @@ module Cleaners
   # Returns [Integer] after removing all non-digit characters, except '.'
   # Returns nil if no digits are present in the string.
   module StringToInteger
-    NUMERIC = Regexp.compile(/[^0-9\.]/)
+    NUMERIC = Regexp.compile(/[^0-9.]/)
 
     def self.call(string)
       return string unless string.is_a?(String)
 
       # Remove Non-Digit Chars, except for '.'
-      string.gsub!(NUMERIC, '')
+      string.gsub!(NUMERIC, "")
       string.length > 0 ? string.to_i : nil
     end
   end
@@ -145,13 +145,13 @@ module Cleaners
   # Returns [Integer] after removing all non-digit characters, except '.'
   # Returns nil if no digits are present in the string.
   module StringToFloat
-    NUMERIC = Regexp.compile(/[^0-9\.]/)
+    NUMERIC = Regexp.compile(/[^0-9.]/)
 
     def self.call(string)
       return string unless string.is_a?(String)
 
       # Remove Non-Digit Chars, except for '.'
-      string.gsub!(NUMERIC, '')
+      string.gsub!(NUMERIC, "")
       string.length > 0 ? string.to_f : nil
     end
   end

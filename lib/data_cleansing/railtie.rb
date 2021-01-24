@@ -1,6 +1,5 @@
 module RubySkynet #:nodoc:
   class Railtie < Rails::Railtie #:nodoc:
-
     # Exposes DataCleansing configuration to the Rails application configuration.
     #
     # @example Set up configuration in the Rails app.

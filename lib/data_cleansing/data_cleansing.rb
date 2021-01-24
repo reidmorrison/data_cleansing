@@ -9,6 +9,7 @@ module DataCleansing
   # Replaces any existing cleaner with the same name
   def self.register_cleaner(name, cleaner = nil, &block)
     raise "Must supply a Proc with the cleaner" unless block || cleaner
+
     @@global_cleaners[name.to_sym] = cleaner || block
   end
 
@@ -19,7 +20,7 @@ module DataCleansing
 
   # Register Attributes to be masked out in any log output
   def self.register_masked_attributes(*attributes)
-    attributes.each {|attr| @@masked_attributes << attr.to_sym }
+    attributes.each { |attr| @@masked_attributes << attr.to_sym }
   end
 
   # Returns the Global list of attributes to mask in any log output
@@ -44,5 +45,4 @@ module DataCleansing
       (proc.method(:call).arity == 1 ? proc.call(value) : proc.call(value, params))
     end
   end
-
 end

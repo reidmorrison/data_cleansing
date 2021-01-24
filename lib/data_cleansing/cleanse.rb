@@ -1,4 +1,4 @@
-require 'data_cleansing/cleaners'
+require "data_cleansing/cleaners"
 module DataCleansing
   # Mix-in to add cleaner
   module Cleanse
@@ -9,7 +9,7 @@ module DataCleansing
       def cleanse(*args)
         last       = args.last
         attributes = args.dup
-        params     = (last.is_a?(Hash) && last.instance_of?(Hash)) ? attributes.pop.dup : {}
+        params     = last.is_a?(Hash) && last.instance_of?(Hash) ? attributes.pop.dup : {}
         cleaners   = Array(params.delete(:cleaner))
         raise(ArgumentError, "Mandatory :cleaner parameter is missing: #{params.inspect}") unless cleaners
 
@@ -34,6 +34,7 @@ module DataCleansing
       def after_cleanse(*methods)
         methods.each do |m|
           raise "Method #{m.inspect} must be a symbol" unless m.is_a?(Symbol)
+
           data_cleansing_after_cleaners << m unless data_cleansing_after_cleaners.include?(m)
         end
       end
@@ -53,7 +54,7 @@ module DataCleansing
       #
       # Warning: If any of the cleaners read or write to other object attributes
       #          then a valid object instance must be supplied
-      def cleanse_attribute(attribute_name, value, object=nil)
+      def cleanse_attribute(attribute_name, value, object = nil)
         return if value.nil?
 
         # Collect parent cleaners first, starting with the top parent
@@ -100,6 +101,7 @@ module DataCleansing
       # itself is not modified
       def data_cleansing_clean(cleaner_struct, value, binding = nil)
         return if cleaner_struct.nil? || value.nil?
+
         # Duplicate value in case cleaner uses methods such as gsub!
         new_value = value.is_a?(String) ? value.dup : value
         cleaner_struct.cleaners.each do |name|
@@ -107,7 +109,6 @@ module DataCleansing
         end
         new_value
       end
-
     end
 
     module InstanceMethods
@@ -118,9 +119,9 @@ module DataCleansing
       #
       # Note: At this time the changes returned does not include any fields
       #       modified in any of the after_cleaner methods
-      def cleanse_attributes!(verbose=DataCleansing.logger.debug?)
+      def cleanse_attributes!(verbose = DataCleansing.logger.debug?)
         changes = {}
-        DataCleansing.logger.benchmark_info("#{self.class.name}#cleanse_attributes!", :payload => changes) do
+        DataCleansing.logger.benchmark_info("#{self.class.name}#cleanse_attributes!", payload: changes) do
           # Collect parent cleaners first, starting with the top parent
           cleaners       = [self.class.send(:data_cleansing_cleaners)]
           after_cleaners = [self.class.send(:data_cleansing_after_cleaners)]
@@ -194,36 +195,33 @@ module DataCleansing
               end
 
             # No need to clean if attribute is nil
-            unless value.nil?
-              new_value = self.class.send(:data_cleansing_clean, cleaner_struct, value, self)
+            next if value.nil?
 
-              if new_value != value
-                # Update value only if it has changed
-                send("#{attr.to_sym}=".to_sym, new_value)
+            new_value = self.class.send(:data_cleansing_clean, cleaner_struct, value, self)
 
-                # Capture changed attributes
-                if changes
-                  # Mask sensitive attributes when logging
-                  masked    = DataCleansing.masked_attributes.include?(attr.to_sym)
-                  new_value = :masked if masked && !new_value.nil?
-                  if previous = changes[attr.to_sym]
-                    previous[:after] = new_value
-                  else
-                    if new_value.nil? || verbose
-                      changes[attr.to_sym] = {
-                        :before => masked ? :masked : value,
-                        :after  => new_value
-                      }
-                    end
-                  end
-                end
-              end
+            next unless new_value != value
+
+            # Update value only if it has changed
+            send("#{attr.to_sym}=".to_sym, new_value)
+
+            # Capture changed attributes
+            next unless changes
+
+            # Mask sensitive attributes when logging
+            masked    = DataCleansing.masked_attributes.include?(attr.to_sym)
+            new_value = :masked if masked && !new_value.nil?
+            if previous = changes[attr.to_sym]
+              previous[:after] = new_value
+            elsif new_value.nil? || verbose
+              changes[attr.to_sym] = {
+                before: masked ? :masked : value,
+                after:  new_value
+              }
             end
           end
         end
         changes
       end
-
     end
 
     def self.included(base)
@@ -233,5 +231,4 @@ module DataCleansing
       end
     end
   end
-
 end
