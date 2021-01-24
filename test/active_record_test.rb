@@ -149,7 +149,7 @@ class ActiveRecordTest < Minitest::Test
         assert_equal '@black@', @user.last_name
         assert_equal "2632 Brown St   \n", @user.address1
         assert_equal "@123456789@", @user.ssn
-        assert_equal nil, @user.zip_code, User2.send(:data_cleansing_cleaners)
+        assert_nil @user.zip_code, User2.send(:data_cleansing_cleaners)
         assert_equal ["\n    123456789   \n  ", ' second '], @user.text
       end
 

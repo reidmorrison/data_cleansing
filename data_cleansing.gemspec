@@ -7,7 +7,6 @@ Gem::Specification.new do |s|
   s.version     = DataCleansing::VERSION
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Reid Morrison']
-  s.email       = ['reidmo@gmail.com']
   s.homepage    = 'http://github.com/reidmorrison/data_cleansing'
   s.summary     = 'Data Cleansing framework for Ruby, Rails, and Mongoid.'
   s.files       = Dir['lib/**/*', 'bin/*', 'LICENSE.txt', 'Rakefile', 'README.md']

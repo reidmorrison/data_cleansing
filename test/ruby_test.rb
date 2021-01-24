@@ -100,14 +100,14 @@ class RubyTest < Minitest::Test
       it 'cleanse_attributes! not cleanse nil attributes' do
         @user.first_name = nil
         @user.cleanse_attributes!
-        assert_equal nil, @user.first_name
+        assert_nil @user.first_name
       end
 
       it 'cleanse_attributes! call after cleaner' do
         @user.first_name = 'Jack'
         @user.last_name = nil
         @user.cleanse_attributes!
-        assert_equal nil, @user.first_name, @user.inspect
+        assert_nil @user.first_name, @user.inspect
         assert_equal 'Jack', @user.last_name, @user.inspect
       end
     end
@@ -135,7 +135,7 @@ class RubyTest < Minitest::Test
       it 'cleanse_attributes! not cleanse nil attributes' do
         @user.first_name = nil
         @user.cleanse_attributes!
-        assert_equal nil, @user.first_name
+        assert_nil @user.first_name
       end
 
       it 'cleanse_attributes! clean child attributes' do
