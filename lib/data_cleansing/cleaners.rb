@@ -49,7 +49,11 @@ module Cleaners
     def self.call(string)
       return string unless string.is_a?(String)
 
-      string.gsub!(NOT_PRINTABLE, "") || string
+      # Strip invalid characters, since they are non printable
+      unless string.valid_encoding?
+        string = string.encode(string.encoding, invalid: :replace, undef: :replace, replace: "")
+      end
+      string.gsub!(NOT_PRINTABLE, '') || string
     end
   end
   DataCleansing.register_cleaner(:remove_non_printable, RemoveNonPrintable)

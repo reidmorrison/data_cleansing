@@ -59,7 +59,7 @@ class CleanersTest < Minitest::Test
 
     it "#remove_non_printable" do
       user                     = User.new
-      user.clean_non_printable = "  !@#$%^&*()+=-~`\t\n   jacK   blAck   <>.,/\"':;{][]\|?/\\  "
+      user.clean_non_printable = "  !@#$%^&*()+=-~`\t\n   jacK   blAck   <>.,/\"':;{][]\|?/\\ \x89 "
       user.cleanse_attributes!
       assert_equal "  !@#$%^&*()+=-~`   jacK   blAck   <>.,/\"':;{][]\|?/\\  ", user.clean_non_printable
     end
