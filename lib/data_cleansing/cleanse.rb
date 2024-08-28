@@ -166,15 +166,17 @@ module DataCleansing
           if attrs.include?(:all) && defined?(ActiveRecord) && respond_to?(:attributes)
             attrs = attributes.keys.collect { |i| i.to_sym }
             attrs.delete(:id)
-            # # Replace any encrypted attributes with their non-encrypted versions if any
-            # if defined?(SymmetricEncryption) && self.class.respond_to?(:encrypted_attributes)
-            #   self.class.encrypted_attributes.each_pair do |clear, encrypted|
-            #     if attrs.include?(encrypted.to_sym)
-            #       attrs.delete(encrypted.to_sym)
-            #       attrs << clear.to_sym
-            #     end
-            #   end
-            # end
+            if ActiveRecord.version < Gem::Version.new("7.0.0")
+              # Replace any encrypted attributes with their non-encrypted versions if any
+              if defined?(SymmetricEncryption) && self.class.respond_to?(:encrypted_attributes)
+                self.class.encrypted_attributes.each_pair do |clear, encrypted|
+                  if attrs.include?(encrypted.to_sym)
+                    attrs.delete(encrypted.to_sym)
+                    attrs << clear.to_sym
+                  end
+                end
+              end
+            end
 
             # Explicitly remove specified attributes from cleansing
             if except = params[:except]
