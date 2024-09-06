@@ -5,9 +5,9 @@ source "https://rubygems.org"
 gem "amazing_print"
 gem "minitest"
 gem "rake"
-gem "activerecord", "~> 5.1.5"
 gem "appraisal"
-gem "sqlite3", "~> 1.3.0", platform: :ruby
-gem "activerecord-jdbcsqlite3-adapter", "~> 51.0", platform: :jruby
+gem "activerecord", "~> 7.2.0"
+gem "sqlite3", "~> 1.4"
+gem "rails", "~> 7.1.0"
 
 gemspec path: "../"

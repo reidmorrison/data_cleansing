@@ -14,5 +14,5 @@ Gem::Specification.new do |s|
   s.license     = "Apache-2.0"
   s.add_dependency "concurrent-ruby", "~> 1.0"
   s.add_dependency "semantic_logger", ">= 2.0"
-  s.required_ruby_version = ">= 2.3"
+  s.required_ruby_version = ">= 2.7"
 end

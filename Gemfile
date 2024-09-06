@@ -5,7 +5,7 @@ gemspec
 gem "amazing_print"
 gem "minitest"
 gem "rake"
-
-gem "activerecord", "~> 6.1.0"
 gem "appraisal"
-gem "sqlite3", "~> 1.4.0", platform: :ruby
+
+gem "activerecord", "~> 7.2.0"
+gem "sqlite3"
